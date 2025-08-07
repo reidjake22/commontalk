@@ -5,7 +5,7 @@ from .utils import clean_llm_response
 from ..utils.message_utils import messages
 from .prompts import system_prompt
 
-def extract_points(model_input, entire_token_cost, retries=3) -> List[str]:
+def extract_points(model_input, retries=3) -> List[str]:
     """ Generates points for a given prompt and input. """
     client = Groq(api_key="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")
     message_list = messages(system_prompt, model_input)
@@ -19,7 +19,7 @@ def extract_points(model_input, entire_token_cost, retries=3) -> List[str]:
     )
     message = response.choices[0].message.content
     tokens = response.usage.total_tokens
-    entire_token_cost[0] += tokens
+    
     print(f"LLM response tokens: {tokens}")
     try:
         cleaned_message = clean_llm_response(message)
@@ -37,7 +37,7 @@ def extract_points(model_input, entire_token_cost, retries=3) -> List[str]:
         print("Response was:", response)
         if retries > 0:
             print("Retrying...")
-            return extract_points(model_input, entire_token_cost, retries - 1)
+            return extract_points(model_input, retries - 1)
         else:
             print("Silently giving up on trying to generate valid list.")
             return []

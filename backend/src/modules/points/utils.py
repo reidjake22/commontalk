@@ -45,14 +45,14 @@ def prepare_prompt(debate_title: str, contribution: Dict, past_contribution: Dic
     """ Prepares the prompt for LLM analysis based on the contribution and past contribution. """
     prior_section = ""
     if past_contribution:
-        prior_section = "## Prior Contribution:\n"
-        +f"Speaker: {past_contribution['attributed_to']}\n
-        +f"{past_contribution['contribution_value']}"
-    current_prompt = f"# Debate Name: {debate_title}\n"
-    + f"{prior_section}\n"
-    + "## Target Contribution: \n"
-    + "Speaker: {contribution['attributed_to']}\n"
-    + f"{contribution['contribution_value']}\n"
+        prior_section = ("## Prior Contribution:\n"
+        f"Speaker: {past_contribution['attributed_to']}\n"
+        f"{past_contribution['contribution_value']}")
+    current_prompt = (f"# Debate Name: {debate_title}\n"
+    f"{prior_section}\n"
+    "## Target Contribution: \n"
+    f"Speaker: {contribution['attributed_to']}\n"
+    f"{contribution['contribution_value']}\n")
     return current_prompt
 
 def fetch_unanalysed_debates(conn, batch_size, filters: Dict = {"house": "Commons"}) -> List[Dict]:
