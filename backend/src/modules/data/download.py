@@ -2,10 +2,11 @@
 import logging
 
 # Local imports:
-from .utils import get_missing_parties, check_date, check_if_members_and_parties_exist
+from .utils import check_date, check_if_members_and_parties_exist
 from ..utils.database_utils import get_db_connection
 from .save import save_parties, save_members, save_debates, save_contributions
-from .scrape import scrape_parties, scrape_members, scrape_debates_and_contributions
+from .scrape import scrape_parties, scrape_members, scrape_debates_and_contributions, get_missing_parties
+
 
 ### MAIN FUNCTION YOU WANT TO USE ###
 

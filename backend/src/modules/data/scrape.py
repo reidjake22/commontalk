@@ -148,3 +148,21 @@ def scrape_party(party_id: str) -> Optional[Dict]:
     else:
         logging.error(f"Error fetching party data for {party_id}: {response.status_code}")
         return None
+
+def get_missing_parties(party_data: List[Dict], member_data: List[Dict]) -> List[Dict]:
+    """ Returns a list of parties that are missing from the party data but are referenced in member data. """
+    party_ids = {party['party_id'] for party in party_data}
+    
+    member_party_ids = {member['latestParty'] for member in member_data if member.get('latestParty')}
+    
+    # Find missing party IDs using set difference
+    missing_party_ids = member_party_ids - party_ids
+    
+    # Return list of missing party dictionaries
+    missing_parties = []
+    for missing_party_id in missing_party_ids:
+        missing_party = scrape_party(missing_party_id)
+        if missing_party:
+            missing_parties.append(missing_party)
+
+    return missing_parties
