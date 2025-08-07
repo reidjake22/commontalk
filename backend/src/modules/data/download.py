@@ -1,6 +1,13 @@
 # Imports:
 import logging
 
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S"
+)
+
 # Local imports:
 from .utils import check_date, check_if_members_and_parties_exist
 from ..utils.database_utils import get_db_connection
@@ -42,9 +49,11 @@ def download_members_and_parties():
     conn = get_db_connection()
     try:
         save_parties(conn, parties)
+        conn.commit()
         save_members(conn, members)
+        conn.commit()
     except Exception as e:
-        logging.error(f"Error saving members or parties: {e}")
+        print(f"Error saving members or parties: {e}")
     finally:
         conn.close()
 
@@ -58,9 +67,11 @@ def download_debates_and_contributions(start_date, end_date):
     conn = get_db_connection()
     try:
         save_debates(conn, debates)
+        conn.commit()
         save_contributions(conn, contributions)
+        conn.commit()
     except Exception as e:
-        logging.error(f"Error saving debates or contributions: {e}")
+        print(f"Error saving debates or contributions: {e}")
     finally:
         conn.close()
 
