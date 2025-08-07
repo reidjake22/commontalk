@@ -1,0 +1,10 @@
+# This file lists the project's dependencies.
+
+
+logging
+typing
+psycopg2
+requests
+time
+openai
+re
