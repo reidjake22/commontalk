@@ -48,9 +48,9 @@ def download_members_and_parties():
     finally:
         conn.close()
 
-def download_debates_and_contributions():
+def download_debates_and_contributions(start_date, end_date):
     """ Downloads debates and contributions data from the API. """
-    debates, contributions = scrape_debates_and_contributions()
+    debates, contributions = scrape_debates_and_contributions(start_date, end_date)
     # Log the number of debates and contributions downloaded
     logging.info(f"Downloaded {len(debates)} debates and {len(contributions)} contributions.")
     
