@@ -8,4 +8,3 @@ def save_points(conn, points: List[Dict]) -> None:
         except Exception as e:
             print(f"Error inserting point for contribution item {point['contribution_item_id']}: {e}")
     conn.commit()
-    

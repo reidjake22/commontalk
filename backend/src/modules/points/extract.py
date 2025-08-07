@@ -5,7 +5,6 @@ from .utils import clean_llm_response
 from ..utils.message_utils import messages
 from .prompts import system_prompt
 
-
 def extract_points(model_input, entire_token_cost, retries=3) -> List[str]:
     """ Generates points for a given prompt and input. """
     client = Groq(api_key="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")
