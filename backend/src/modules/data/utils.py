@@ -3,7 +3,6 @@ from typing import List, Dict, Optional
 import time
 
 # Local imports:
-from .scrape import scrape_party
 from ..utils.database_utils import get_db_connection
 
 def extract_debate_overview(debate_data: Dict) -> Dict:
@@ -51,25 +50,6 @@ def extract_contributions(debate_data: Dict) -> List[Dict]:
                 contribution_dict["attributed_to"] = attribution
         contributions.append(contribution_dict)
     return contributions
-
-
-def get_missing_parties(party_data: List[Dict], member_data: List[Dict]) -> List[Dict]:
-    """ Returns a list of parties that are missing from the party data but are referenced in member data. """
-    party_ids = {party['party_id'] for party in party_data}
-    
-    member_party_ids = {member['latestParty'] for member in member_data if member.get('latestParty')}
-    
-    # Find missing party IDs using set difference
-    missing_party_ids = member_party_ids - party_ids
-    
-    # Return list of missing party dictionaries
-    missing_parties = []
-    for missing_party_id in missing_party_ids:
-        missing_party = scrape_party(missing_party_id)
-        if missing_party:
-            missing_parties.append(missing_party)
-
-    return missing_parties
 
 def check_if_members_and_parties_exist():
     """ Checks if members and parties data exist in the database. """

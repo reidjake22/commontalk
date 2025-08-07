@@ -1,6 +1,4 @@
 # This file lists the project's dependencies.
-
-typing
-psycopg2
+psycopg2-binary
 requests
 openai
