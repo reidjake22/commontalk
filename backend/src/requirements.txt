@@ -3,3 +3,4 @@ psycopg2-binary
 requests
 openai
 groq
+scikit-learn

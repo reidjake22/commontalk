@@ -8,8 +8,8 @@ def summarise_cluster(cluster_points: List, title: str) -> str:
         return "Empty cluster"
     
     # Extract point values (assuming point[1] is the text content)
-    point_texts = [str(point[1]) for point in cluster_points[:10]]  # Limit to 10 for API
-    
+    point_texts = [str(point["text"]) for point in cluster_points[:20]]  # Limit to 20 for API
+
     model_input = f"""The following points are all part of the same category - {title}. 
     Using the additional context of the points themselves, please provide a 200-word summary 
     of the arguments, points and concerns revealed in these points:
@@ -38,7 +38,7 @@ def title_cluster(cluster_points: List) -> str:
         return "Empty Cluster"
     
     # Extract point values (assuming point[1] is the text content)
-    point_texts = [str(point[1]) for point in cluster_points[:5]]  # Limit to 5 for API
+    point_texts = [str(point["text"]) for point in cluster_points[:15]]  # Limit to 5 for API
     
     model_input = f"""The following points are all part of the same category. 
     Identify what that category is: {' | '.join(point_texts)}. 

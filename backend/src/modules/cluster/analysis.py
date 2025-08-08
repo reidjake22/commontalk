@@ -17,3 +17,5 @@ def cluster_analysis(points, config) -> List[str]:
         
     # Additional clustering methods can be added here
     return []
+
+#python -m backend.src.modules.cluster.run --start-date 2025-07-01 --end-date 2025-07-08

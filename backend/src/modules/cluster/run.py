@@ -11,7 +11,6 @@ from ..utils.database_utils import get_db_connection
 from .config import default_config
 from .retrieve_points import get_points
 
-
 #### MAIN FUNCTION ######
 def run_clustering(config: Dict = default_config, filters: Optional[Dict] = None) -> Dict:
     conn = get_db_connection()
@@ -23,9 +22,27 @@ def run_clustering(config: Dict = default_config, filters: Optional[Dict] = None
     
     current_depth = 0
     clusters = cluster_recursive(conn, points, config, current_depth)
-    return clusters
+    clean_clusters = strip_embeddings(clusters)
+    return clean_clusters
+
+def strip_embeddings(data):
+    """Recursively remove 'embedding' keys from nested data structures"""
+    if isinstance(data, dict):
+        result = {}
+        for key, value in data.items():
+            if key == 'embedding':
+                continue  # Skip embedding keys entirely
+            else:
+                result[key] = strip_embeddings(value)
+        return result
+    elif isinstance(data, list):
+        return [strip_embeddings(item) for item in data]
+    else:
+        return data
+
 
 def main():
+    print("starting")
     parser = argparse.ArgumentParser(description='Run clustering analysis with date range')
     parser.add_argument('--start-date', required=True, help='Start date (YYYY-MM-DD)')
     parser.add_argument('--end-date', required=True, help='End date (YYYY-MM-DD)')
@@ -59,11 +76,16 @@ def main():
     if args.max_depth:
         config['max_depth'] = args.max_depth
         print(f"using max_depth {config['max_depth']}")
-    
+    conn = get_db_connection()
+
+
     result = run_clustering(config, filters)
     if result:
         print(f"Clustering completed successfully")
         print(f"Root cluster ID: {result.get('cluster_id')}")
+        import json
+        print(json.dumps(result, indent=2, ensure_ascii=False))
+
         response = input("do you want to enter a shell? Y/N: ").upper()
         if response == 'Y':
             import IPython; IPython.embed()
