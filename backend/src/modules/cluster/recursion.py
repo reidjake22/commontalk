@@ -7,7 +7,7 @@ from .llm_labelling import summarise_cluster, title_cluster
 from .save import save_cluster
 from .analysis import cluster_analysis
 
-def cluster_recursive(conn, points, config, current_depth, parent_cluster_id=None) -> Dict    :
+def cluster_recursive(conn, points: List[Dict], config, current_depth, parent_cluster_id=None) -> Dict:
     """Recursively clusters points into sub-clusters."""
     cluster = {
         "layer": current_depth,
@@ -42,7 +42,6 @@ def cluster_recursive(conn, points, config, current_depth, parent_cluster_id=Non
         cluster["sub_clusters"].append(sub_cluster)
 
     return cluster
-
 
 """
 Updated database schema:

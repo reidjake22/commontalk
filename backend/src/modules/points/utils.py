@@ -58,7 +58,9 @@ def prepare_prompt(debate_title: str, contribution: Dict, past_contribution: Dic
 def fetch_unanalysed_debates(conn, batch_size, filters: Dict = {"house": "Commons"}) -> List[Dict]:
     """ Fetches debates that have not been analysed and have contributions with member_id. """
     cursor = conn.cursor()
-    cursor.execute("""
+    
+    # Base query
+    query = """
         SELECT ext_id, title
         FROM debate
         WHERE analysed IS FALSE
@@ -68,12 +70,26 @@ def fetch_unanalysed_debates(conn, batch_size, filters: Dict = {"house": "Common
             FROM contribution
             WHERE debate_ext_id = debate.ext_id AND member_id IS NOT NULL
         )
-        ORDER BY ext_id
-        LIMIT %s;
-    """, (filters.get("house", "Commons"), batch_size))
+    """
+    params = [filters.get("house", "Commons")]
     
+    # Add date filters if provided
+    if filters.get("start_date"):
+        query += " AND date >= %s"
+        params.append(filters["start_date"])
+    
+    if filters.get("end_date"):
+        query += " AND date <= %s"
+        params.append(filters["end_date"])
+    
+    query += " ORDER BY ext_id LIMIT %s;"
+    params.append(batch_size)
+    
+    cursor.execute(query, params)
+
     results = cursor.fetchall()
     cursor.close()
+    
     return [{"ext_id": row[0], "title": row[1]} for row in results]
 
 def mark_as_analysed(conn, debate_ext_id: str):

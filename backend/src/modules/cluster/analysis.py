@@ -14,8 +14,5 @@ def cluster_analysis(points, config) -> List[str]:
         case _:
             logging.error(f"Unknown clustering method: {analysis_method}")
             raise ValueError(f"Unknown clustering method: {analysis_method}")
-        
     # Additional clustering methods can be added here
     return []
-
-#python -m backend.src.modules.cluster.run --start-date 2025-07-01 --end-date 2025-07-08

@@ -14,7 +14,6 @@ from ..utils.database_utils import get_db_connection
 from .save import save_parties, save_members, save_debates, save_contributions
 from .scrape import scrape_parties, scrape_members, scrape_debates_and_contributions, get_missing_parties
 
-
 ### MAIN FUNCTION YOU WANT TO USE ###
 
 def download_data(start_date: str, end_date: str):
@@ -31,17 +30,18 @@ def download_data(start_date: str, end_date: str):
     download_debates_and_contributions(start_date, end_date)
     logging.info("Debates and contributions data downloaded successfully.")
 
-
-
 def download_members_and_parties():
     """ Downloads members and parties data from the API. """
+    #Lists of dictionaries to insert each dictionary is a data item
     members = scrape_members()
     parties = scrape_parties()
     
+    # returns a list of parties 
     missing_parties = get_missing_parties(parties, members)
+    
     if missing_parties:
         parties.extend(missing_parties)
-        
+    
     # Log the number of members and parties downloaded
     logging.info(f"Downloaded {len(members)} members and {len(parties)} parties.")
 
@@ -74,4 +74,3 @@ def download_debates_and_contributions(start_date, end_date):
         print(f"Error saving debates or contributions: {e}")
     finally:
         conn.close()
-

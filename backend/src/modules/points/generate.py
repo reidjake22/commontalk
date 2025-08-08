@@ -5,7 +5,8 @@ from .extract import extract_points
 from .utils import check_contribution, prepare_prompt, fetch_unanalysed_debates, mark_as_analysed
 from .save import save_points
 
-#### MAIN FUNCTION WE WANT TO USE
+#### MAIN FUNCTION WE WANT TO USE ####
+
 def generate_points(batch_size: int = 10, filters: Dict = {"house": "Commons"}):
     """
     Generates points from debates that have not been analysed yet.
@@ -13,15 +14,17 @@ def generate_points(batch_size: int = 10, filters: Dict = {"house": "Commons"}):
     conn = get_db_connection()
     analysis_pass = 0
     while True:
-        debates = fetch_unanalysed_debates(conn, batch_size, filters)    
+        debate_list = fetch_unanalysed_debates(conn, batch_size, filters)    
 
-        print(f"Found {len(debates)} unanalysed debates. Processing...")
-        process_debates(conn, debates)
-        if not debates:
+        if not debate_list:
             print(f"analysed {analysis_pass * batch_size} debates")
             conn.close()
             print("All debates processed.")
             break
+
+        print(f"Found {len(debate_list)} unanalysed debates. Processing...")
+        process_debates(conn, debate_list)
+
         analysis_pass +=1
 
 
