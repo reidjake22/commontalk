@@ -1,10 +1,9 @@
 from typing import List, Dict
-from .save import save_point
 from ..utils.database_utils import get_db_connection
 from .embed import embed
 from .extract import extract_points
 from .utils import check_contribution, prepare_prompt, fetch_unanalysed_debates, mark_as_analysed
-
+from .save import save_points
 
 #### MAIN FUNCTION WE WANT TO USE
 def generate_points(batch_size: int = 10, filters: Dict = {"house": "Commons"}):
@@ -12,17 +11,19 @@ def generate_points(batch_size: int = 10, filters: Dict = {"house": "Commons"}):
     Generates points from debates that have not been analysed yet.
     """
     conn = get_db_connection()
-    debates = fetch_unanalysed_debates(conn, batch_size, filters)
-    
-    if not debates:
-        print("No unanalysed debates found.")
-        return
-    
-    print(f"Found {len(debates)} unanalysed debates. Processing...")
-    process_debates(conn, debates)
-    
-    conn.close()
-    print("All debates processed.")
+    analysis_pass = 0
+    while True:
+        debates = fetch_unanalysed_debates(conn, batch_size, filters)    
+
+        print(f"Found {len(debates)} unanalysed debates. Processing...")
+        process_debates(conn, debates)
+        if not debates:
+            print(f"analysed {analysis_pass * batch_size} debates")
+            conn.close()
+            print("All debates processed.")
+            break
+        analysis_pass +=1
+
 
 def process_debates(conn, debates: List[Dict]):
     """ Processes each debate to extract contributions and generate points. """
@@ -31,8 +32,7 @@ def process_debates(conn, debates: List[Dict]):
     for debate_ext_id, debate_title in zip(debate_ids, debate_titles):
         point_list = process_debate(conn, debate_ext_id, debate_title)
         if point_list:
-            for item_id, point, embedding in point_list:
-                save_point(item_id, point, embedding)
+            save_points(conn, point_list)
         # Mark debate as analysed
         mark_as_analysed(conn, debate_ext_id)
         print(f"Processed debate {debate_ext_id} with {len(point_list)} points extracted.")
