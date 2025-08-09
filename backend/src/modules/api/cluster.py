@@ -36,24 +36,26 @@ def get_or_create_weekly_clustering(target_date=None):
             'data': cluster,
             'cached': exists,
             'date_range': filters
+        })
+    
+    except Exception as e:
         print(f"Internal server error: {e}")
         return jsonify({'error': 'An internal server error occurred.'}), 500
-
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
+    finally:
+        conn.close()
+        
 def check_if_cluster_exists(conn, filters: Dict) -> bool:
     """Check if a cluster already exists for the given filters."""
-    query = """
-        SELECT COUNT(*) FROM clusters
-        WHERE filters_used @> %s::jsonb AND filters_used <@ %s::jsonb
-    """
-    params = [json.dumps(filters), json.dumps(filters)]
-    cursor.execute(query, params)
-    exists = cursor.fetchone()[0] > 0
+    cursor = conn.cursor()
+    
+    try:
+        query = """
+            SELECT COUNT(*) FROM clusters
+            WHERE layer = 0 
+            AND parent_cluster_id IS NULL
             AND filters_used = %s::jsonb
         """
-        params = [json.dumps(filters, sort_keys=True)]  # Sort keys for consistent comparison
+        params = [json.dumps(filters, sort_keys=True)]
         cursor.execute(query, params)
         exists = cursor.fetchone()[0] > 0
         return exists
@@ -72,7 +74,7 @@ def get_cluster(conn, filters: Dict) -> Dict:
             FROM clusters 
             WHERE layer = 0 
             AND parent_cluster_id IS NULL
-            AND filters_used = %s::jsonb
+            AND filters_used::jsonb = %s::jsonb
             ORDER BY created_at DESC
             LIMIT 1;
         """, [json.dumps(filters, sort_keys=True)])  # Sort keys for consistent comparison
