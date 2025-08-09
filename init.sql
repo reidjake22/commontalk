@@ -68,7 +68,8 @@ CREATE TABLE clusters (
     summary TEXT,
     layer INTEGER,
     created_at TIMESTAMPTZ DEFAULT NOW(),  -- Use TIMESTAMPTZ, not TEXT
-    filters_used JSONB
+    filters_used JSONB,
+    method VARCHAR(50)
 );
 
 CREATE TABLE cluster_points (
