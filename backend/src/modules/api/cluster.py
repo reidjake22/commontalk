@@ -3,11 +3,16 @@ from flask import Flask, jsonify
 from modules.cluster.run import run_clustering
 from typing import Dict
 from ..utils.database_utils import get_db_connection
+import json
+
 def get_or_create_weekly_clustering(target_date=None):
     conn = get_db_connection()
     try:
         if target_date:
-            end_date = datetime.strptime(target_date, '%Y-%m-%d') # Check if this ends up being inclusive
+            try:
+                end_date = datetime.strptime(target_date, '%Y-%m-%d') # Check if this ends up being inclusive
+            except ValueError:
+                return jsonify({'error': f'Invalid date format for target_date: {target_date}. Expected YYYY-MM-DD.'}), 400
         else:
             end_date = datetime.now()
 
@@ -22,7 +27,7 @@ def get_or_create_weekly_clustering(target_date=None):
         if exists:
             print("Cluster already exists, retrieving from database")
             cluster = get_cluster(conn, filters)
-        if not exists:
+        else:
             print("No existing cluster found, running clustering")
             cluster = run_clustering(filters=filters)
 
@@ -31,32 +36,34 @@ def get_or_create_weekly_clustering(target_date=None):
             'data': cluster,
             'cached': exists,
             'date_range': filters
-        })
+        print(f"Internal server error: {e}")
+        return jsonify({'error': 'An internal server error occurred.'}), 500
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
 def check_if_cluster_exists(conn, filters: Dict) -> bool:
     """Check if a cluster already exists for the given filters."""
-    cursor = conn.cursor()
     query = """
         SELECT COUNT(*) FROM clusters
-        WHERE filters_used @> %s::jsonb
+        WHERE filters_used @> %s::jsonb AND filters_used <@ %s::jsonb
     """
-    params = [json.dumps(filters)]
+    params = [json.dumps(filters), json.dumps(filters)]
     cursor.execute(query, params)
     exists = cursor.fetchone()[0] > 0
-    cursor.close()
-    return exists
-
-import json
-from typing import Dict, Optional
+            AND filters_used = %s::jsonb
+        """
+        params = [json.dumps(filters, sort_keys=True)]  # Sort keys for consistent comparison
+        cursor.execute(query, params)
+        exists = cursor.fetchone()[0] > 0
+        return exists
+    finally:
+        cursor.close()
 
 def get_cluster(conn, filters: Dict) -> Dict:
     """
     Retrieve existing cluster tree in the same format as cluster_recursive produces
     """
-    # Find the root cluster (layer 0, no parent) that matches the filters
     cursor = conn.cursor()
     
     try:
@@ -65,32 +72,30 @@ def get_cluster(conn, filters: Dict) -> Dict:
             FROM clusters 
             WHERE layer = 0 
             AND parent_cluster_id IS NULL
-            AND filters_used @> %s::jsonb
+            AND filters_used = %s::jsonb
             ORDER BY created_at DESC
             LIMIT 1;
-        """, [json.dumps(filters)])
+        """, [json.dumps(filters, sort_keys=True)])  # Sort keys for consistent comparison
         
         root_row = cursor.fetchone()
         if not root_row:
-            cursor.close()
             return {}
         
         # Build the full tree starting from root
         root_cluster = build_cluster_tree(conn, root_row[0])
-        cursor.close()
         return root_cluster
         
     except Exception as e:
-        cursor.close()
         print(f"Error retrieving cluster: {e}")
         return {}
+    finally:
+        cursor.close()
 
 def build_cluster_tree(conn, cluster_id: int) -> Dict:
     """
     Recursively build cluster tree in the same format as cluster_recursive
     """
     cursor = conn.cursor()
-    
     try:
         # Get cluster details
         cursor.execute("""
@@ -101,7 +106,6 @@ def build_cluster_tree(conn, cluster_id: int) -> Dict:
         
         cluster_row = cursor.fetchone()
         if not cluster_row:
-            cursor.close()
             return {}
         
         # Build cluster object matching recursion.py format
@@ -154,10 +158,10 @@ def build_cluster_tree(conn, cluster_id: int) -> Dict:
                 if sub_cluster:  # Only add if successfully built
                     cluster['sub_clusters'].append(sub_cluster)
         
-        cursor.close()
         return cluster
         
     except Exception as e:
-        cursor.close()
         print(f"Error building cluster tree for ID {cluster_id}: {e}")
         return {}
+    finally:
+        cursor.close()
