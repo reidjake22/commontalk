@@ -15,13 +15,14 @@ from .retrieve_points import get_points
 def run_clustering(config: Dict = default_config, filters: Optional[Dict] = None) -> Dict:
     conn = get_db_connection()
     filters = filters or {}
+    print(f"Running clustering with filters: {filters}")
     points = get_points(conn, filters)
     if not points:
         logging.warning("No points found for clustering.")
         return {}
     
     current_depth = 0
-    clusters = cluster_recursive(conn, points, config, current_depth)
+    clusters = cluster_recursive(conn, points, config, filters, current_depth)
     clean_clusters = strip_embeddings(clusters)
     return clean_clusters
 

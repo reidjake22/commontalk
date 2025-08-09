@@ -8,8 +8,8 @@ def save_cluster(conn, cluster: Dict) -> int:
     try:
         # Insert cluster record
         cursor.execute("""
-            INSERT INTO clusters (parent_cluster_id, title, summary, layer, created_at, filters_used)
-            VALUES (%s, %s, %s, %s, %s, %s)
+            INSERT INTO clusters (parent_cluster_id, title, summary, layer, created_at, filters_used, method)
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
             RETURNING cluster_id;
         """, (
             cluster.get("parent_cluster_id"),  # Use .get() to handle None safely
@@ -17,7 +17,8 @@ def save_cluster(conn, cluster: Dict) -> int:
             cluster.get("summary"),
             cluster["layer"],
             cluster["timestamp"],
-            json.dumps(cluster.get("filters_used", {}))  # Convert dict to JSON string
+            json.dumps(cluster.get("filters_used", {})),  # Convert dict to JSON string
+            cluster.get("method")
         ))
         
         cluster_id = cursor.fetchone()[0]
