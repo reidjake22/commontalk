@@ -6,28 +6,27 @@ def save_cluster(conn, cluster: Dict) -> int:
     cursor = conn.cursor()
     
     try:
-        # Insert cluster record
+        # Insert cluster record - ADD config column, REMOVE method column
         cursor.execute("""
-            INSERT INTO clusters (parent_cluster_id, title, summary, layer, created_at, filters_used, method)
+            INSERT INTO clusters (parent_cluster_id, title, summary, layer, created_at, filters_used, config)
             VALUES (%s, %s, %s, %s, %s, %s, %s)
             RETURNING cluster_id;
         """, (
-            cluster.get("parent_cluster_id"),  # Use .get() to handle None safely
+            cluster.get("parent_cluster_id"),
             cluster.get("title"),
             cluster.get("summary"),
             cluster["layer"],
             cluster["timestamp"],
-            json.dumps(cluster.get("filters_used", {})),  # Convert dict to JSON string
-            cluster.get("method")
+            json.dumps(cluster.get("filters_used", {})),
+            json.dumps(cluster.get("config", {}))  # ADD this line, REMOVE method
         ))
         
         cluster_id = cursor.fetchone()[0]
         
-        # Save cluster-point relationships
+        # Save cluster-point relationships (unchanged)
         if cluster.get("points"):
             for point in cluster["points"]:
-                # Point structure should be {"id": ..., "text": ..., "embedding": ...}
-                point_id = point["id"]  # Changed from "point_id" to "id"
+                point_id = point["id"]
                 cursor.execute("""
                     INSERT INTO cluster_points (cluster_id, point_id)
                     VALUES (%s, %s)
@@ -37,7 +36,7 @@ def save_cluster(conn, cluster: Dict) -> int:
         return cluster_id
         
     except Exception as e:
-        conn.rollback()  # Rollback on error
+        conn.rollback()
         raise e
     finally:
         cursor.close()

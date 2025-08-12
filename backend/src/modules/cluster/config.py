@@ -2,5 +2,7 @@
 default_config = {
     "max_depth": 2,
     "min_points": 3,
-    "method": "kmeans"
+    "method": "kmeans",
+    "n_clusters": 3,  # ADD this for KMeans
+    "skip_llm": False,  # ADD this for LLM control
 }

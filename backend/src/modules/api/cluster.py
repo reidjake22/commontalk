@@ -36,16 +36,15 @@ def get_or_create_weekly_clustering(target_date=None):
             'data': cluster,
             'cached': exists,
             'date_range': filters
-        })
-    
+        })    
     except Exception as e:
         print(f"Internal server error: {e}")
         return jsonify({'error': 'An internal server error occurred.'}), 500
     finally:
         conn.close()
         
-def check_if_cluster_exists(conn, filters: Dict) -> bool:
-    """Check if a cluster already exists for the given filters."""
+def check_if_cluster_exists(conn, config: Dict, filters: Dict) -> bool:
+    """Check if a cluster already exists for the given filters and config."""
     cursor = conn.cursor()
     
     try:
@@ -54,15 +53,19 @@ def check_if_cluster_exists(conn, filters: Dict) -> bool:
             WHERE layer = 0 
             AND parent_cluster_id IS NULL
             AND filters_used = %s::jsonb
+            AND config = %s::jsonb;
         """
-        params = [json.dumps(filters, sort_keys=True)]
+        params = [
+            json.dumps(filters, sort_keys=True), 
+            json.dumps(config, sort_keys=True)
+        ]
         cursor.execute(query, params)
         exists = cursor.fetchone()[0] > 0
         return exists
     finally:
         cursor.close()
 
-def get_cluster(conn, filters: Dict) -> Dict:
+def get_cluster(conn, filters: Dict, config: Dict) -> Dict:
     """
     Retrieve existing cluster tree in the same format as cluster_recursive produces
     """
@@ -70,14 +73,18 @@ def get_cluster(conn, filters: Dict) -> Dict:
     
     try:
         cursor.execute("""
-            SELECT cluster_id, title, summary, layer, created_at, filters_used, method, parent_cluster_id
+            SELECT cluster_id, title, summary, layer, created_at, filters_used, config, parent_cluster_id
             FROM clusters 
             WHERE layer = 0 
             AND parent_cluster_id IS NULL
             AND filters_used::jsonb = %s::jsonb
+            AND config::jsonb = %s::jsonb
             ORDER BY created_at DESC
             LIMIT 1;
-        """, [json.dumps(filters, sort_keys=True)])  # Sort keys for consistent comparison
+        """, [
+            json.dumps(filters, sort_keys=True),
+            json.dumps(config, sort_keys=True)
+        ])
         
         root_row = cursor.fetchone()
         if not root_row:
@@ -99,9 +106,10 @@ def build_cluster_tree(conn, cluster_id: int) -> Dict:
     """
     cursor = conn.cursor()
     try:
-        # Get cluster details
+        print(f"Building cluster tree for ID {cluster_id}")
+        # Get cluster details - removed 'method' column
         cursor.execute("""
-            SELECT cluster_id, title, summary, layer, created_at, filters_used, method, parent_cluster_id
+            SELECT cluster_id, title, summary, layer, created_at, filters_used, config, parent_cluster_id
             FROM clusters 
             WHERE cluster_id = %s;
         """, [cluster_id])
@@ -118,7 +126,7 @@ def build_cluster_tree(conn, cluster_id: int) -> Dict:
             "layer": cluster_row[3],
             "timestamp": cluster_row[4].isoformat() if cluster_row[4] else None,
             "filters_used": cluster_row[5] if cluster_row[5] else {},
-            "method": cluster_row[6],
+            "config": cluster_row[6] if cluster_row[6] else {},  # Changed from 'method'
             "parent_cluster_id": cluster_row[7],
             "points": [],
             "sub_clusters": []
@@ -138,7 +146,6 @@ def build_cluster_tree(conn, cluster_id: int) -> Dict:
             points.append({
                 'id': point_row[0],
                 'text': point_row[1]
-                # Note: embeddings will be stripped by strip_embeddings() in run_clustering
             })
         
         cluster['points'] = points
@@ -167,3 +174,72 @@ def build_cluster_tree(conn, cluster_id: int) -> Dict:
         return {}
     finally:
         cursor.close()
+
+def get_or_create_monthly_clustering(target_date=None, filters=None, config=None):
+    conn = get_db_connection()
+    try:
+        if target_date:
+            try:
+                end_date = datetime.strptime(target_date, '%Y-%m-%d') # Check if this ends up being inclusive
+            except ValueError:
+                return jsonify({'error': f'Invalid date format for target_date: {target_date}. Expected YYYY-MM-DD.'}), 400
+        else:
+            end_date = datetime.now()
+
+        start_date = end_date - timedelta(days=60)
+
+        if not filters:
+            filters = {}
+        
+        filters = {
+            **filters,
+            "start_date": start_date.strftime('%Y-%m-%d'),
+            "end_date": end_date.strftime('%Y-%m-%d')
+        }
+        print(config)
+        if not config:
+            config = {
+                'method': "kmeans",
+                'max_depth': 3,
+                'min_no_points': 5,
+            }
+
+        exists = check_if_cluster_exists(conn, config, filters)
+        if exists:
+            print("Cluster already exists, retrieving from database")
+            cluster = get_cluster(conn, filters, config)  # Pass config here
+        else:
+            print("No existing cluster found, running clustering")
+            cluster = run_clustering(config=config, filters=filters)
+
+        return jsonify({
+            'success': True,
+            'data': cluster,
+            'cached': exists,
+            'date_range': filters
+        })
+        
+    except Exception as e:
+        print(f"Internal server error: {e}")
+        return jsonify({'error': 'An internal server error occurred.'}), 500
+    finally:
+        conn.close()
+
+def retrieve_cluster(cluster_id):
+    conn = get_db_connection()
+    try:
+        print(f"Retrieving cluster with ID {cluster_id}")
+        cluster = build_cluster_tree(conn, cluster_id)
+        if not cluster:
+            return jsonify({'error': 'Cluster not found.'}), 404
+        
+        return jsonify({
+            'success': True,
+            'data': cluster
+        })
+        
+    except Exception as e:
+        print(f"Error retrieving cluster: {e}")
+        return jsonify({'error': 'An internal server error occurred.'}), 500
+    finally:
+        conn.close()

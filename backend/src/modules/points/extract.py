@@ -20,7 +20,6 @@ def extract_points(model_input, retries=3) -> List[str]:
     message = response.choices[0].message.content
     tokens = response.usage.total_tokens
     
-    print(f"LLM response tokens: {tokens}")
     try:
         cleaned_message = clean_llm_response(message)
 

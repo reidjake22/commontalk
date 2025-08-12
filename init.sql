@@ -69,7 +69,7 @@ CREATE TABLE clusters (
     layer INTEGER,
     created_at TIMESTAMPTZ DEFAULT NOW(),  -- Use TIMESTAMPTZ, not TEXT
     filters_used JSONB,
-    method VARCHAR(50)
+    config JSONB DEFAULT '{}'::jsonb  -- Add this line
 );
 
 CREATE TABLE cluster_points (

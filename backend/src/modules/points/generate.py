@@ -63,6 +63,8 @@ def process_debate(conn, debate_ext_id: str, debate_title: str):
     
     # Process each contribution
     for i, contribution in enumerate(contributions):
+        if i % (len(contributions) // 10) == 0:
+            print(f"Processing contribution {i+1}/{len(contributions)} in debate {debate_ext_id}")
         past_contribution = contributions[i-1] if i > 0 else None
         if not check_contribution(contribution):
             print(f"Skipping contribution {contribution['item_id']} in debate {debate_ext_id} - {contribution['attributed_to']}: not suitable for LLM analysis")

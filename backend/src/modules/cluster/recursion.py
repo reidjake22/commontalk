@@ -9,10 +9,11 @@ from .analysis import cluster_analysis
 
 def cluster_recursive(conn, points: List[Dict], config, filters, current_depth, parent_cluster_id=None) -> Dict:
     """Recursively clusters points into sub-clusters."""
+    print(f"clustering at depth {current_depth}")
     cluster = {
         "layer": current_depth,
         "filters_used": filters,
-        "method": config.get("method"),
+        "config": config,  # ADD: Store entire config object
         "timestamp": datetime.now().isoformat(),
         "title": None,
         "summary": None,
@@ -30,7 +31,7 @@ def cluster_recursive(conn, points: List[Dict], config, filters, current_depth, 
         return cluster
     
     cluster["sub_clusters"] = []
-    labels = cluster_analysis(points, config)
+    labels = cluster_analysis(points, config, is_top = (current_depth == 0))
     clusters_by_label = {}
     for i, label in enumerate(labels):
         if label not in clusters_by_label:
