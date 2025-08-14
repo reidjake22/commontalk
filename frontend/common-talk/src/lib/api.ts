@@ -1,0 +1,29 @@
+// File: src/lib/api.ts
+// =============================================
+import type { FeaturedTopicsResponse } from "./types";
+
+const API_BASE =
+  (import.meta as any)?.env?.VITE_API_BASE_URL ||
+  "http://127.0.0.1:8000/"; // same-origin in dev when using a proxy
+
+async function fetchJSON<T>(url: string, init?: RequestInit, retry = 1): Promise<T> {
+  try {
+    const res = await fetch(url, init);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return (await res.json()) as T;
+  } catch (err) {
+    if (retry > 0) {
+      await new Promise((r) => setTimeout(r, 300));
+      return fetchJSON<T>(url, init, retry - 1);
+    }
+    throw err;
+  }
+}
+
+export function getFeaturedTopics(signal?: AbortSignal) {
+  const url = `${API_BASE}/api/featured/topics`;
+  return fetchJSON<FeaturedTopicsResponse>(url, {
+    signal,
+    headers: { Accept: "application/json" },
+  });
+}
