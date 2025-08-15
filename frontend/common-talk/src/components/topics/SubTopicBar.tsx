@@ -1,8 +1,8 @@
 // File: src/components/topics/SubTopicBar.tsx
 // =============================================
-import type { Topic } from "../../lib/types";
+import type { FeaturedTopicOut } from "../../lib/types";
 
-export function SubTopicBar({ subTopics }: { subTopics?: Topic[] }) {
+export function SubTopicBar({ subTopics }: { subTopics?: FeaturedTopicOut[] }) {
   if (!subTopics?.length) return null;
 
   return (
@@ -10,7 +10,7 @@ export function SubTopicBar({ subTopics }: { subTopics?: Topic[] }) {
       <div className="text-xs text-gray-600 font-medium">Related Topics</div>
       <div className="space-y-1">
         {subTopics.slice(0, 3).map((subTopic, index) => (
-          <div key={subTopic.id} className="flex items-center gap-2">
+          <div key={subTopic.topic_id} className="flex items-center gap-2">
             <div className="flex-1 min-w-0">
               <div className="text-xs font-medium text-gray-800 truncate">{subTopic.title}</div>
             </div>

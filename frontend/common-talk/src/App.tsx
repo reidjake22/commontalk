@@ -1,9 +1,9 @@
 import { Link, Route, Routes } from "react-router-dom";
 import Home from "./pages/Home";
-import Topic from "./pages/Topic";
 import {Header} from "./components/Header";
 import {Footer} from "./components/Footer";
 import "./App.css"; // Assuming you have some global styles
+import TopicPage from "./pages/TopicPage";
 
 export default function App() {
   return (
@@ -11,7 +11,7 @@ export default function App() {
       <Header />
       <Routes>
         <Route path="/" element={<Home />} />
-        <Route path="/topics/:id" element={<Topic />} />
+        <Route path="/topics/:topicId" element={<TopicPage />} />
         <Route path="/people/:id" element={<div>Person Page</div>} />
         <Route path="/debates/:id" element={<div>Debate Page</div>} />
       </Routes>

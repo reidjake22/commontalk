@@ -3,7 +3,8 @@
 import { useMemo } from "react";
 import { FeaturedTopics } from "../components/FeaturedTopics";
 import { useFeaturedTopics } from "../hooks/useFeaturedTopics";
-import type { Debate, Person } from "../lib/types";
+import type { Debate, Person, FeaturedTopicOut } from "../lib/types";
+
 
 export default function Home() {
   const { topics, loading, error } = useFeaturedTopics();
@@ -43,7 +44,9 @@ export default function Home() {
         ) : topics.length === 0 ? (
           <div className="mt-6 rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm text-gray-800">No trending topics right now. Check back shortly.</div>
         ) : (
-          <div className="mt-6"><FeaturedTopics topics={topics} /></div>
+          <div className="mt-6">
+            <FeaturedTopics topics={topics as FeaturedTopicOut[]} />
+          </div>
         )}
 
         {/* Placeholders for other featured sections (keep components decoupled) */}

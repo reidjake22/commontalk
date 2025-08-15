@@ -1,10 +1,10 @@
 // File: src/components/ContributionBar.tsx
 // =============================================
 import { memo, useMemo } from "react";
-import { getPartyInfo } from "../lib/party";
+import { type LightPartyOut } from "../lib/types";
 
 export interface ContributionBarProps {
-  proportions: ReadonlyArray<readonly [number, number]>;
+  proportions: Array<[LightPartyOut, number]>;
   variant?: "default" | "compact";
 }
 
@@ -17,10 +17,15 @@ export const ContributionBar = memo(function ContributionBar({ proportions, vari
       ? [...proportions].sort(([, a], [, b]) => b - a).slice(0, 2)
       : proportions.filter(([, v]) => total > 0 && v / total >= 0.1);
 
-    const barSegments = proportions.map(([partyId, value]) => {
+    const barSegments = proportions.map(([party, value]) => {
       const pct = total > 0 ? (value / total) * 100 : 0;
-      const party = getPartyInfo(partyId);
-      return { partyId, pct, color: party.color, name: party.name };
+      return {
+        partyId: party.party_id,
+        pct,
+        color: party.background_colour || "#ccc",
+        name: party.name,
+        shortName: party.abbreviation || party.name,
+      };
     });
 
     return { total, filtered, compact, barSegments };
@@ -45,13 +50,12 @@ export const ContributionBar = memo(function ContributionBar({ proportions, vari
       </div>
 
       <div className="flex flex-wrap gap-2 text-xs">
-        {filtered.map(([partyId, value]) => {
-          const party = getPartyInfo(partyId);
+        {filtered.map(([party, value]) => {
           const pct = total > 0 ? (value / total) * 100 : 0;
-          const name = variant === "compact" ? party.shortName : party.name;
+          const name = variant === "compact" ? (party.abbreviation || party.name) : party.name;
           return (
-            <div key={partyId} className="flex items-center gap-1">
-              <div className={`${dot} rounded-full`} style={{ backgroundColor: party.color }} />
+            <div key={party.party_id} className="flex items-center gap-1">
+              <div className={`${dot} rounded-full`} style={{ backgroundColor: party.background_colour || "#ccc" }} />
               <span className="text-gray-700">{name}</span>
               <span className="text-gray-500">{pct.toFixed(0)}%</span>
             </div>

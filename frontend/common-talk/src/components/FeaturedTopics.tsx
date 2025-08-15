@@ -1,12 +1,12 @@
 // File: src/components/FeaturedTopics.tsx
 // =============================================
-import type { Topic } from "../lib/types";
+import type { FeaturedTopicOut } from "../lib/types";
 import { Tile } from "./ui/Tile";
 import { ContributionBar } from "./ContributionBar";
 import { TopicFooter, TopicHeader } from "./topics/TopicMeta";
 import { SubTopicBar } from "./topics/SubTopicBar";
 
-export function FeaturedTopics({ topics }: { topics: Topic[] }) {
+export function FeaturedTopics({ topics }: { topics: FeaturedTopicOut[] }) {
   const top = topics.slice(0, 5);
   if (top.length === 0) return null;
   const [first, ...rest] = top;
@@ -17,16 +17,16 @@ export function FeaturedTopics({ topics }: { topics: Topic[] }) {
       <h2 id="featured-heading" className="text-2xl md:text-3xl font-serif tracking-tight">Featured Topics</h2>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-4 lg:auto-rows-[minmax(8rem,auto)]">
-        <FeaturedBig key={first.id} topic={first} rank={1} className="lg:col-span-2 lg:row-span-2" />
+        <FeaturedBig key={first.topic_id} topic={first} rank={1} className="lg:col-span-2 lg:row-span-2" />
         {rest.map((t, i) => (
-          <FeaturedSmall key={t.id} topic={t} rank={i + 2} />
+          <FeaturedSmall key={t.topic_id} topic={t} rank={i + 2} />
         ))}
       </div>
     </section>
   );
 }
 
-export function FeaturedBig({ topic, rank, className = "" }: { topic: Topic; rank: number; className?: string }) {
+export function FeaturedBig({ topic, rank, className = "" }: { topic: FeaturedTopicOut; rank: number; className?: string }) {
   return (
     <Tile className={`rounded-2xl p-6 justify-between ${className}`}>
       <div className="absolute inset-x-0 top-0 h-1 brand-gradient rounded-t-2xl" />
@@ -42,20 +42,20 @@ export function FeaturedBig({ topic, rank, className = "" }: { topic: Topic; ran
         ) : null}
       </header>
       <div className="space-y-4">
-        {topic.subTopics?.length ? <SubTopicBar subTopics={topic.subTopics} /> : null}
-        <TopicFooter topicId={topic.id} />
+        {topic.sub_topics?.length ? <SubTopicBar subTopics={topic.sub_topics} /> : null}
+        <TopicFooter topicId={topic.topic_id} />
       </div>
     </Tile>
   );
 }
 
-export function FeaturedSmall({ topic, rank }: { topic: Topic; rank: number }) {
+export function FeaturedSmall({ topic, rank }: { topic: FeaturedTopicOut; rank: number }) {
   return (
     <Tile className="rounded-xl p-4 gap-2 aspect-[4/3]">
       <div className="absolute inset-x-0 top-0 h-0.5 brand-gradient rounded-t-xl" />
       <div className="flex items-start justify-between gap-3">
         <span className="text-[11px] font-semibold text-gray-700">No. {rank}</span>
-        <a href={`/topics/${topic.id}`} className="text-xs text-blue-700 hover:underline">Open</a>
+        <a href={`/topics/${topic.topic_id}`} className="text-xs text-blue-700 hover:underline">Open</a>
       </div>
       <h4 className="text-base font-semibold leading-snug">{topic.title}</h4>
       <p className="text-sm text-gray-700 line-clamp-3">{topic.summary}</p>
