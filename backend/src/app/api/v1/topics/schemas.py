@@ -1,5 +1,9 @@
 from typing import List, Optional
 from pydantic import BaseModel, Field
+from typing import List, Optional, Generic, TypeVar
+
+T = TypeVar("T")
+
 
 class LightMemberOut(BaseModel):
     """API v1 minimal member model for frontend display."""
@@ -60,18 +64,35 @@ class RichPointOut(BaseModel):
     contribution: ContributionOut
     member: LightMemberOut
 
+
+
+class PageMetaOut(BaseModel):
+    next_cursor: Optional[str] = None
+    prev_cursor: Optional[str] = None
+    total_count: Optional[int] = None
+
+class PagedResponseOut(Generic[T], BaseModel):
+    data: List[T]
+    meta: PageMetaOut
+
+class PagedPointsOut(PagedResponseOut[RichPointOut]):
+    data: List[RichPointOut]  # concrete type for data
+
+
+class PartyProportionOut(BaseModel):
+    """API v1 party proportion model."""
+    party: LightPartyOut
+    count: int
+
 class SingleTopicOut(BaseModel):
     """API v1 single topic response."""
     topic_id: str
     title: Optional[str] = None
     summary: Optional[str] = None
-    points_slice: List[RichPointOut] = Field(default_factory=list)
+    points: PagedPointsOut = Field(default_factory=list)
     contributors: List[LightMemberOut] = Field(default_factory=list)
-    proportions: List[tuple[LightPartyOut, int]] = Field(default_factory=list)
+    proportions: List[PartyProportionOut] = Field(default_factory=list)
     sub_topics: Optional[List[FeaturedTopicOut]] = Field(default_factory=list)
-    # API-specific metadata
-    points_total: Optional[int] = None
-    points_returned: int = 0
 
 class FeaturedTopicsOut(BaseModel):
     """API v1 featured topics response."""

@@ -1,7 +1,7 @@
-from typing import List, Optional, Dict
+from typing import List, Optional, Dict, Generic, TypeVar
 from pydantic import BaseModel, Field
 from modules.models.database import Point, Debate, Contribution
-
+from modules.models.pagination import PagedResponse
 class LightMember(BaseModel):
     """Minimal member model for frontend display."""
     member_id: str
@@ -18,6 +18,9 @@ class LightParty(BaseModel):
     background_colour: Optional[str] = None
     foreground_colour: Optional[str] = None
 
+class LightPartyProportion(BaseModel):
+    party: LightParty
+    count: int
 
 class FeaturedTopic(BaseModel):
     """Detailed topic with additional metadata."""
@@ -37,12 +40,16 @@ class RichPoint(BaseModel):
     contribution: Contribution
     member: LightMember
 
+class PagedRichPoints(PagedResponse[RichPoint]):
+    data: List[RichPoint]  # concrete type for data
+
 class SingleTopic(BaseModel):
-    """Model for a single topic with its ID."""
     topic_id: str
     title: Optional[str] = None
     summary: Optional[str] = None
-    points_slice: List['RichPoint'] # RichPoints are pretty heavy and there are a lot of points - probs better to slice this and create call to generate more
-    contributors: List[LightMember] = Field(default_factory=list)
-    proportions: List[tuple[LightParty, int]] = Field(default_factory=list)
-    sub_topics: Optional[List[FeaturedTopic]] = Field(default_factory=list)
+    contributors: List[LightMember] = []
+    proportions: List[PartyProportion] = []
+    sub_topics: Optional[List[FeaturedTopic]] = None
+    points: Optional[PagedRichPoints] = None
+
+

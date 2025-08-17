@@ -8,11 +8,12 @@ from datetime import datetime
 # Relative Imports
 from .recursion import cluster_recursive
 from ..utils.database_utils import get_db_connection
+from ..utils.cluster_utils import finalise_job, create_job
 from .config import default_config
 from .retrieve_points import get_points
 
 #### MAIN FUNCTION ######
-def run_clustering(config: Dict = default_config, filters: Optional[Dict] = None) -> Dict:
+def run_clustering(config, filters: Optional[Dict] = None) -> Dict:
     conn = get_db_connection()
     filters = filters or {}
     print(f"Running clustering with filters: {filters}")
@@ -20,9 +21,11 @@ def run_clustering(config: Dict = default_config, filters: Optional[Dict] = None
     if not points:
         logging.warning("No points found for clustering.")
         return {}
-    
     current_depth = 0
     clusters = cluster_recursive(conn, points, config, filters, current_depth)
+    finalise_job(config['run_id'])
+    conn.commit()
+    conn.close()
     clean_clusters = strip_embeddings(clusters)
     return clean_clusters
 

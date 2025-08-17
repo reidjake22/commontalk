@@ -2,6 +2,7 @@ from typing import Dict, Optional, List, Tuple
 import json
 from ..models.cluster import ClusterData
 from ..models.database import Cluster, Point, Member, Party
+from ..models.pagination import PagedPoints, PageMeta
 
 def check_if_cluster_exists(conn, config: Dict, filters: Dict) -> bool:
     """Check if a cluster already exists for the given filters and config."""
@@ -27,7 +28,7 @@ def check_if_cluster_exists(conn, config: Dict, filters: Dict) -> bool:
         return False
 
 
-def get_cluster_by_setup(conn, filters: Dict, config: Dict, include_points: bool, include_metadata:bool) -> Optional[ClusterData]:
+def get_cluster_by_setup(conn, filters: Dict, config: Dict, include_points: bool, include_metadata:bool, page_size: int=10) -> Optional[ClusterData]:
     """
     Retrieve existing cluster tree and return as ClusterData object
     """
@@ -53,14 +54,14 @@ def get_cluster_by_setup(conn, filters: Dict, config: Dict, include_points: bool
             return None
         
         # Build the full tree starting from root
-        root_cluster = build_cluster_tree(conn, root_row[0], include_points, include_metadata)
+        root_cluster = build_cluster_tree(conn, root_row[0], include_points, include_metadata, page_size)
         return root_cluster
         
     except Exception as e:
         print(f"Error retrieving cluster: {e}")
         return None
 
-def get_cluster_by_id(conn, cluster_id: int, include_points: bool, include_metadata: bool) -> Optional[ClusterData]:
+def get_cluster_by_id(conn, cluster_id: int, include_points: bool, include_metadata: bool, page_size: int) -> Optional[ClusterData]:
     """
     Retrieve existing cluster tree by ID and return as ClusterData object
     """
@@ -78,14 +79,14 @@ def get_cluster_by_id(conn, cluster_id: int, include_points: bool, include_metad
             return None
 
         # Build the full tree starting from root
-        root_cluster = build_cluster_tree(conn, cluster_row[0], include_points, include_metadata)
+        root_cluster = build_cluster_tree(conn, cluster_row[0], include_points, include_metadata, page_size)
         return root_cluster
 
     except Exception as e:
         print(f"Error retrieving cluster: {e}")
         return None
 
-def build_cluster_tree(conn, cluster_id: int, include_points: bool = False, include_metadata: bool = False) -> Optional[ClusterData]:
+def build_cluster_tree(conn, cluster_id: int, include_points: bool = False, include_metadata: bool = False, page_size: int = 10) -> Optional[ClusterData]:
     """
     Recursively build cluster tree and return as ClusterData object
     """
@@ -122,9 +123,10 @@ def build_cluster_tree(conn, cluster_id: int, include_points: bool = False, incl
                 FROM cluster_points cp
                 JOIN point p ON cp.point_id = p.point_id
                 WHERE cp.cluster_id = %s
-                ORDER BY p.point_id;
-            """, [cluster_id])    
-            
+                ORDER BY p.point_id
+                limit %s;
+            """, [cluster_id, page_size])
+
             points = []
             for point_row in cursor.fetchall():
                 points.append(Point(
@@ -143,14 +145,15 @@ def build_cluster_tree(conn, cluster_id: int, include_points: bool = False, incl
         
         sub_clusters = []
         for sub_row in cursor.fetchall():
-            sub_cluster = build_cluster_tree(conn, sub_row[0], include_points, include_metadata)
+            sub_cluster = build_cluster_tree(conn, sub_row[0], include_points, include_metadata, page_size)
             if sub_cluster:
                 sub_clusters.append(sub_cluster)
-        
+        next_cursor = str(points[-1].point_id) if len(points) == page_size else None
+        paged_points = PagedPoints(data=points, meta=PageMeta(next_cursor=next_cursor))
         # Create cluster data object
         cluster_data = ClusterData(
             cluster=cluster,
-            points=points,
+            points=paged_points,
             sub_clusters=sub_clusters
         )
         
@@ -268,3 +271,95 @@ def get_contributors(cluster: ClusterData, limit: int = 5) -> List[Member]:
     finally:
         cursor.close()
         conn.close()
+
+def get_cluster_points_after(conn, cluster_id: int, after_id: int, page_size: int = 50) -> PagedPoints:
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT p.point_id, p.contribution_item_id, p.point_value
+        FROM cluster_points cp
+        JOIN point p ON p.point_id = cp.point_id
+        WHERE cp.cluster_id = %s
+          AND p.point_id > %s
+        ORDER BY p.point_id ASC
+        LIMIT %s
+    """, [cluster_id, after_id, page_size])
+
+    rows = cur.fetchall()
+    data: List[Point] = [Point(point_id=r[0], contribution_item_id=r[1], point_value=r[2]) for r in rows]
+    next_cursor = str(data[-1].point_id) if len(data) == page_size else None
+    return PagedPoints(data=data, meta=PageMeta(next_cursor=next_cursor, page_size=page_size))
+
+def create_job(params: dict) -> int:
+    from ..utils.database_utils import get_db_connection
+
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("""
+                INSERT INTO cluster_jobs (status, params)
+                VALUES ('queued', %s::jsonb)
+                RETURNING job_id
+            """, [json.dumps(params, sort_keys=True)])
+            job_id = cur.fetchone()[0]
+        conn.commit()
+        return job_id
+    finally:
+        conn.close()
+
+
+def set_job_status(job_id: int, status: str, message: str | None = None, error: str | None = None):
+    from ..utils.database_utils import get_db_connection
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("""
+              UPDATE cluster_jobs
+                 SET status=%s,
+                     message=COALESCE(%s, message),
+                     error=COALESCE(%s, error),
+                     started_at = CASE WHEN %s='running' THEN now() ELSE started_at END,
+                     finished_at = CASE WHEN %s IN ('complete','failed','canceled') THEN now() ELSE finished_at END
+               WHERE job_id=%s
+            """, [status, message, error, status, status, job_id])
+        conn.commit()
+    finally:
+        conn.close()
+
+def finalise_job(job_id: int):
+    from ..utils.database_utils import get_db_connection
+
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cur:
+            # flip all clusters written by this job from draft→final
+            cur.execute("UPDATE clusters SET is_draft=FALSE WHERE job_id=%s", [job_id])
+            cur.execute("""
+                UPDATE cluster_jobs
+                   SET status='complete', progress=1, finished_at=now()
+                 WHERE job_id=%s
+            """, [job_id])
+        conn.commit()
+    finally:
+        conn.close()
+
+def get_job_status(job_id):
+    from ..utils.database_utils import get_db_connection
+
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("SELECT status, error FROM cluster_jobs WHERE job_id=%s", [job_id])
+            row = cur.fetchone()
+            if row:
+                return {
+                    "status": row[0],
+                    "error": row[1]
+                }
+    except:
+        raise Exception
+
+
+
+
+
+
