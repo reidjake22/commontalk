@@ -1,14 +1,15 @@
 from typing import List
-from .models import FeaturedTopic, LightMember, LightParty, SingleTopic, RichPoint
-from modules.models.cluster import ClusterData
-from modules.models.database import Point, Contribution, Member, Debate
 
+from sklearn import logger
+from .models import FeaturedTopic, LightMember, LightParty, SingleTopic, RichPoint, LightPartyProportion, PagedRichPoints
+from modules.models.cluster import ClusterData, PartyProportion
+from modules.models.database import Point, Contribution, Member, Debate
+from modules.models.pagination import PagedResponse, PageMeta
 def map_cluster_to_featured_topics(cluster: ClusterData) -> List[FeaturedTopic]:
     """
     Maps a cluster's sub-clusters to a list of featured topics.
     """
     featured_topics = []
-    
     for sub_cluster in cluster.sub_clusters:
         featured_topic = map_single_cluster_to_featured_topic(sub_cluster)
         featured_topics.append(featured_topic)
@@ -35,16 +36,16 @@ def map_single_cluster_to_featured_topic(cluster: ClusterData) -> FeaturedTopic:
     # Extract proportions from cluster metadata  
     proportions = []
     if cluster.proportions:
-        for party, count in cluster.proportions[:3]:  # Top 3 parties
+        for party_proportion in proportions[:3]:  # Top 3 parties
             light_party = LightParty(
-                party_id=party.party_id,
-                name=party.name,
-                abbreviation=party.abbreviation,
-                background_colour=party.background_colour,
-                foreground_colour=party.foreground_colour
+                party_id=party_proportion.party.party_id,
+                name=party_proportion.party.name,
+                abbreviation=party_proportion.party.abbreviation,
+                background_colour=party_proportion.party.background_colour,
+                foreground_colour=party_proportion.party.foreground_colour
             )
-            proportions.append((light_party, count))
-    
+            proportions.append(LightPartyProportion(party=light_party, count=party_proportion.count))
+
     # Recursively map any sub-clusters to sub_topics
     sub_topics = []
     if cluster.sub_clusters:
@@ -65,48 +66,42 @@ def map_cluster_to_single_topic(cluster: ClusterData) -> SingleTopic:
     """
     Maps a ClusterData object to a SingleTopic object.
     """
-    print("mapping")
-    points_slice=map_points_to_rich_points(cluster.points)
-    print("points slice")
-    contributors=map_contributors_to_light_members(cluster.contributors)
-    print("contributors")
-    proportions=map_proportions_to_light_parties(cluster.proportions)
-    print("proportions")
-    sub_topics=map_cluster_to_featured_topics(cluster)
-    print("sub topics")
+    rich_points = map_points_to_rich_points(cluster.points)
+    contributors = map_contributors_to_light_members(cluster.contributors)
+    proportions = map_proportions_to_light_parties(cluster.proportions)
+    sub_topics = map_cluster_to_featured_topics(cluster)
+
     
     # Create SingleTopic object
-    print("Creating SingleTopic object")
     return SingleTopic(
         topic_id=str(cluster.cluster_id),
         title=cluster.title,
         summary=cluster.summary,
-        points_slice=points_slice,
+        points=rich_points,
         contributors=contributors,
         proportions=proportions,
+        debates=cluster.debates,
         sub_topics=sub_topics
     )
 
-def map_points_to_rich_points(points: List[Point], limit: int = 10) -> List[RichPoint]:
+def map_points_to_rich_points(points: PagedResponse[Point]) -> PagedResponse[RichPoint]:
     """
     Maps Point objects to RichPoint objects with related data.
     """
     if not points:
-        return []
-    
+        return PagedResponse[RichPoint](data=[], meta=PageMeta())
+
     from modules.utils.database_utils import get_db_connection
     
     conn = get_db_connection()
     cursor = conn.cursor()
     
     try:
-        # Limit the points we process
-        limited_points = points[:limit]
-        point_ids = [point.point_id for point in limited_points]
-        
+        point_ids = [point.point_id for point in points.data]
+
         if not point_ids:
-            return []
-        
+            return PagedResponse[RichPoint](data=[], meta=PageMeta())
+
         # Build query with IN clause for multiple points
         placeholders = ','.join(['%s'] * len(point_ids))
         query = f"""
@@ -183,18 +178,20 @@ def map_points_to_rich_points(points: List[Point], limit: int = 10) -> List[Rich
             )
             
             rich_points.append(rich_point)
-        
-        print(rich_points[0])
-        return rich_points
-        
+        paged_rich_points = PagedRichPoints(data=rich_points, meta=PageMeta(
+                prev_cursor=rich_points[-1].point.point_id if rich_points else None,
+                total_count=len(rich_points)
+            ))
+        return paged_rich_points
+
     except Exception as e:
-        print(f"Error creating rich points: {e}")
+        logger.error(f"Error creating rich points: {e}")
         return []
     finally:
         cursor.close()
         conn.close()
 
-def map_contributors_to_light_members(contributors: List) -> List[LightMember]:
+def map_contributors_to_light_members(contributors: List[Member]) -> List[LightMember]:
     """Convert Member objects to LightMember objects."""
     if not contributors:
         return []
@@ -210,21 +207,19 @@ def map_contributors_to_light_members(contributors: List) -> List[LightMember]:
         ))
     return light_members
 
-def map_proportions_to_light_parties(proportions: List) -> List[tuple[LightParty, int]]:
+def map_proportions_to_light_parties(proportions: List[PartyProportion]) -> List[PartyProportion]:
     """Convert Party/count tuples to LightParty/count tuples."""
     if not proportions:
         return []
     
     light_proportions = []
-    for party, count in proportions[:3]:  # Top 3 parties
+    for party_proportion in proportions[:5]:  # Top 5 parties
         light_party = LightParty(
-            party_id=party.party_id,
-            name=party.name,
-            abbreviation=party.abbreviation,
-            background_colour=party.background_colour,
-            foreground_colour=party.foreground_colour
+            party_id=party_proportion.party.party_id,
+            name=party_proportion.party.name,
+            abbreviation=party_proportion.party.abbreviation,
+            background_colour=party_proportion.party.background_colour,
+            foreground_colour=party_proportion.party.foreground_colour
         )
-        light_proportions.append((light_party, count))
-    
+        light_proportions.append(LightPartyProportion(party=light_party, count=party_proportion.count))
     return light_proportions
-

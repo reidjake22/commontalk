@@ -1,5 +1,5 @@
 import psycopg2
-from typing import Dict
+
 
 def get_db_connection():
     return psycopg2.connect(

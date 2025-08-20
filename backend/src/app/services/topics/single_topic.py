@@ -16,13 +16,10 @@ def run(topic_id:str)-> SingleTopic:
     conn = get_db_connection()
     try:
         single_cluster = get_cluster_by_id(conn, topic_id, include_points=True, include_metadata=True)
-        print("single cluster")
         single_topic = map_cluster_to_single_topic(single_cluster)
-        print("single topic")
         return single_topic
     except Exception as e:
-        print(f"Error retrieving single topic with ID {topic_id}: {e}")
+        logger.error(f"Error retrieving single topic with ID {topic_id}: {e}")
         raise ServiceUnavailable(f"Could not retrieve topic with ID {topic_id}") from e
     finally:
         conn.close()
-        print("Database connection closed")

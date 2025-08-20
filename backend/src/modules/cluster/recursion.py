@@ -6,7 +6,7 @@ from datetime import datetime
 from .llm_labelling import summarise_cluster, title_cluster
 from .save import save_cluster
 from .analysis import cluster_analysis
-
+# from ..models.query import Config
 def cluster_recursive(conn, points: List[Dict], config, filters, current_depth, parent_cluster_id=None) -> Dict:
     """Recursively clusters points into sub-clusters."""
     print(f"clustering at depth {current_depth}")
@@ -21,7 +21,7 @@ def cluster_recursive(conn, points: List[Dict], config, filters, current_depth, 
         "parent_cluster_id": parent_cluster_id,
     }
     # Perform clustering
-    if current_depth > 0 and not (config.get("skip_llm")):
+    if (current_depth > 0 or config.get('search')) and not (config.get("skip_llm")):
         cluster["title"] = title_cluster(points)
         cluster["summary"] = summarise_cluster(points, cluster["title"])
     
@@ -43,3 +43,4 @@ def cluster_recursive(conn, points: List[Dict], config, filters, current_depth, 
         cluster["sub_clusters"].append(sub_cluster)
 
     return cluster
+

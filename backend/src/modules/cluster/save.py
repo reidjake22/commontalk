@@ -8,8 +8,8 @@ def save_cluster(conn, cluster: Dict) -> int:
     try:
         # Insert cluster record - ADD config column, REMOVE method column
         cursor.execute("""
-            INSERT INTO clusters (parent_cluster_id, title, summary, layer, created_at, filters_used, config)
-            VALUES (%s, %s, %s, %s, %s, %s, %s)
+            INSERT INTO clusters (parent_cluster_id, title, summary, layer, created_at, filters_used, config, job_id, is_draft)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, FALSE)
             RETURNING cluster_id;
         """, (
             cluster.get("parent_cluster_id"),
@@ -18,7 +18,8 @@ def save_cluster(conn, cluster: Dict) -> int:
             cluster["layer"],
             cluster["timestamp"],
             json.dumps(cluster.get("filters_used", {})),
-            json.dumps(cluster.get("config", {}))  # ADD this line, REMOVE method
+            json.dumps(cluster.get("config", {})),
+            cluster['config']['job_id']
         ))
         
         cluster_id = cursor.fetchone()[0]
@@ -32,11 +33,11 @@ def save_cluster(conn, cluster: Dict) -> int:
                     VALUES (%s, %s)
                 """, (cluster_id, point_id))
         
-        conn.commit()
         return cluster_id
         
     except Exception as e:
         conn.rollback()
         raise e
     finally:
+        conn.commit()
         cursor.close()

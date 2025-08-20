@@ -14,6 +14,7 @@ def generate_points(batch_size: int = 10, filters: Dict = {"house": "Commons"}):
     conn = get_db_connection()
     analysis_pass = 0
     while True:
+        print(f"Starting analysis pass {analysis_pass + 1} with batch size {batch_size}")
         debate_list = fetch_unanalysed_debates(conn, batch_size, filters)    
 
         if not debate_list:
@@ -32,13 +33,13 @@ def process_debates(conn, debates: List[Dict]):
     """ Processes each debate to extract contributions and generate points. """
     debate_titles = [debate['title'] for debate in debates]
     debate_ids = [debate['ext_id'] for debate in debates]
-    for debate_ext_id, debate_title in zip(debate_ids, debate_titles):
+    for i, (debate_ext_id, debate_title) in enumerate(zip(debate_ids, debate_titles)):
+        print(f"Processing debate {i + 1}/{len(debates)}: {debate_title} (ID: {debate_ext_id})")
         point_list = process_debate(conn, debate_ext_id, debate_title)
         if point_list:
             save_points(conn, point_list)
         # Mark debate as analysed
         mark_as_analysed(conn, debate_ext_id)
-        print(f"Processed debate {debate_ext_id} with {len(point_list)} points extracted.")
 
 def process_debate(conn, debate_ext_id: str, debate_title: str):
     """ Processes a single debate to extract contributions and generate points. """
@@ -52,22 +53,20 @@ def process_debate(conn, debate_ext_id: str, debate_title: str):
     
     result = cursor.fetchall()
     cursor.close()
-    print(f"Got contributions for {debate_ext_id}")
     cols = [descr[0] for descr in cursor.description]
     contributions = [dict(zip(cols, row)) for row in result]
-    print(f"Processing {len(contributions)} contributions for debate {debate_ext_id}")
     point_list = []
     if not contributions:
         print(f"No contributions found for debate {debate_ext_id}. Skipping.")
         return point_list
     
     # Process each contribution
+    print(f"Processing {len(contributions)} contributions for debate {debate_ext_id}")
     for i, contribution in enumerate(contributions):
-        if i % (len(contributions) // 10) == 0:
-            print(f"Processing contribution {i+1}/{len(contributions)} in debate {debate_ext_id}")
+        if i % ((len(contributions) // 5) +1) == 0:
+            print(f"Processing contribution {i+1}/{len(contributions)} in debate {debate_ext_id}", flush=True)
         past_contribution = contributions[i-1] if i > 0 else None
         if not check_contribution(contribution):
-            print(f"Skipping contribution {contribution['item_id']} in debate {debate_ext_id} - {contribution['attributed_to']}: not suitable for LLM analysis")
             continue
         # Prepare the prompt for LLM analysis
         current_prompt = prepare_prompt(debate_title, contribution, past_contribution)
@@ -77,7 +76,6 @@ def process_debate(conn, debate_ext_id: str, debate_title: str):
                 embedding = embed(point)
                 point_list.append((contribution['item_id'], point, embedding))
                     
-    print(f"Processed {len(point_list)} points for debate {debate_ext_id}.")
     return point_list
 
 

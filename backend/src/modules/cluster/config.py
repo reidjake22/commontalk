@@ -4,5 +4,6 @@ default_config = {
     "min_points": 3,
     "method": "kmeans",
     "n_clusters": 3,  # ADD this for KMeans
-    "skip_llm": False,  # ADD this for LLM control
+    "skip_llm": False,  # ADD this for LLM control,
+    "job_id": 1,
 }

@@ -3,6 +3,7 @@ from openai import OpenAI
 def embed(point):
     client = OpenAI(api_key="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")
     try:
+        print(f"Generating embedding for point: {point}")
         text = point.replace("\n", " ").replace("\r", " ").strip()
         response = client.embeddings.create(
             input=text,

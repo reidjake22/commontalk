@@ -19,6 +19,7 @@ export type FeaturedTopicOut = {
   title?: string | null;
   summary?: string | null;
   contributors: LightMemberOut[];
+  // Backend sends tuples here
   proportions: Array<[LightPartyOut, number]>;
   sub_topics?: FeaturedTopicOut[] | null;
 };
@@ -52,16 +53,32 @@ export type RichPointOut = {
   member: LightMemberOut;
 };
 
+export type PageMetaOut = {
+  next_cursor?: string | null;
+  prev_cursor?: string | null;
+  total_count?: number | null;
+};
+
+export type PagedResponseOut<T> = {
+  data: T[];
+  meta: PageMetaOut;
+};
+
+export type PagedPointsOut = PagedResponseOut<RichPointOut>;
+
+export type PartyProportionOut = {
+  party: LightPartyOut;
+  count: number;
+};
+
 export type SingleTopicOut = {
   topic_id: string;
   title?: string | null;
   summary?: string | null;
-  points_slice: RichPointOut[];
+  points?: PagedPointsOut | null;           // paged now
   contributors: LightMemberOut[];
-  proportions: Array<[LightPartyOut, number]>;
-  sub_topics?: FeaturedTopicOut[] | null;
-  points_total?: number | null;
-  points_returned: number;
+  proportions: PartyProportionOut[];        // object form here
+  sub_topics?: SingleTopicOut[] | null;
 };
 
 const API_BASE = "http://127.0.0.1:5000/";

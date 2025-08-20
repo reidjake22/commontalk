@@ -1,14 +1,18 @@
 # backend/src/app/services/topics/featured_topics.py
 from modules.utils.database_utils import get_db_connection
-from modules.utils.cluster_utils import get_cluster_by_id, get_cluster_by_setup, check_if_cluster_exists
+from modules.utils.cluster_utils import get_cluster_by_id, get_cluster_by_setup, check_if_cluster_exists, create_job
+from modules.utils.executor_utils import submit
 from modules.cluster.run import run_clustering
 from datetime import datetime, timedelta
 from .models import FeaturedTopic
+from ...common.models import JobNotification
 from .mappers import map_cluster_to_featured_topics
-from typing import List, Dict
+from app.common.errors import ErrorSchema
+from typing import List, Dict, Union
 
 
-def run(target_date="2025-07-16") -> List[FeaturedTopic]:
+
+def run(target_date="2025-07-16") -> Union[List[FeaturedTopic], JobNotification]:
     conn = get_db_connection()
     try:
         conn = get_db_connection()
@@ -40,13 +44,28 @@ def run(target_date="2025-07-16") -> List[FeaturedTopic]:
             print("Featured topics mapped successfully")
         else:
             print("Cluster does not exist, running clustering")
-            cluster = run_clustering(filters=filters, config=config)['cluster_id']
-            cluster = get_cluster_by_id(conn, cluster, include_points=False, include_metadata=True)
-            featured_topic = map_cluster_to_featured_topics(cluster)
+            job_id = submit_cluster_run(filters=filters, config=config)
+            return JobNotification(job_id=job_id)
         print("Featured topics run successfully")
         return featured_topic
     except Exception as e:
-        print(f"Error retrieving featured clusters: {e}")
-        return None
+        error_obj = ErrorSchema(message=str(e))
+        print(f"Error during featured topics run: {e}")
+        return error_obj
+        
+
     finally:
         conn.close()
+
+def submit_cluster_run(filters, config,):
+    config["search"] = False
+    params = {
+        "filters": filters,
+        "config": config
+    }
+    job_id = create_job(params)
+    config["job_id"] = job_id
+    
+    submit(run_clustering, config, filters)
+    return job_id
+
