@@ -77,6 +77,7 @@ CREATE TABLE clusters (
 CREATE TABLE cluster_jobs (
   job_id        BIGSERIAL PRIMARY KEY,
   status        TEXT NOT NULL CHECK (status IN ('queued','running','complete','failed','canceled')),
+  root_cluster_id INTEGER REFERENCES clusters(cluster_id) ON DELETE SET NULL,
   params        JSONB NOT NULL,           -- search, filters, config
   created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
   started_at    TIMESTAMPTZ,

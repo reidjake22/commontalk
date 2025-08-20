@@ -1,7 +1,7 @@
 // File: src/components/FeaturedTopics.tsx
 // =============================================
 import type { FeaturedTopicOut } from "../lib/types";
-import { Tile } from "./ui/Tile";
+import { Tile } from "./ui/tile";
 import { ContributionBar } from "./ContributionBar";
 import { TopicFooter, TopicHeader } from "./topics/TopicMeta";
 import { SubTopicBar } from "./topics/SubTopicBar";

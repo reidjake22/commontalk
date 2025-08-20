@@ -13,12 +13,12 @@ export const PartyProportionsBar = memo(function PartyProportionsBar({ proportio
       const pct = total > 0 ? (value / total) * 100 : 0;
       const style = resolvePartyStyle(party);
       console.log(style)
-      return { key: party.party_id, pct, color: style.color, name: style.label };
+      return { key: party.party_id, pct, color: "#" + style.color, name: style.label };
     });
     const labels = top.map(([party, value]) => {
       const style = resolvePartyStyle(party);
       const pct = total > 0 ? (value / total) * 100 : 0;
-      return { key: party.party_id, name: style.label, color: style.color, pct };
+      return { key: party.party_id, name: style.label, color: "#" + style.color, pct };
     });
     return { total, segments, labels };
   }, [proportions, variant]);

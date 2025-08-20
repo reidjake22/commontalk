@@ -8,4 +8,19 @@ export default defineConfig({
     react(),
     tailwindcss()
   ],
+    server: {
+    proxy: {
+      "/hansard": {
+        target: "https://hansard-api.parliament.uk",
+        changeOrigin: true,
+        secure: true,
+        rewrite: (path) => path.replace(/^\/hansard/, ""),
+      },
+      "/members": {
+        target: "https://members-api.parliament.uk",
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/members/, ""),
+      },
+    },
+  }
 })
