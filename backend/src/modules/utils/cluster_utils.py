@@ -1,8 +1,9 @@
 from typing import Dict, Optional, List, Tuple
 import json
-from ..models.cluster import ClusterData
-from ..models.database import Cluster, Point, Member, Party
+from ..models.cluster import ClusterData, PartyProportion
+from ..models.database import Cluster, Point, Member, Party, Debate
 from ..models.pagination import PagedPoints, PageMeta
+from datetime import datetime
 
 def check_if_cluster_exists(conn, config: Dict, filters: Dict) -> bool:
     """Check if a cluster already exists for the given filters and config."""
@@ -61,25 +62,15 @@ def get_cluster_by_setup(conn, filters: Dict, config: Dict, include_points: bool
         print(f"Error retrieving cluster: {e}")
         return None
 
-def get_cluster_by_id(conn, cluster_id: int, include_points: bool, include_metadata: bool, page_size: int) -> Optional[ClusterData]:
+def get_cluster_by_id(conn, cluster_id: int, include_points: bool, include_metadata: bool, page_size: int=10) -> Optional[ClusterData]:
     """
     Retrieve existing cluster tree by ID and return as ClusterData object
     """
     cursor = conn.cursor()
     
     try:
-        cursor.execute("""
-            SELECT cluster_id, title, summary, layer, created_at, filters_used, config, parent_cluster_id
-            FROM clusters
-            WHERE cluster_id = %s;
-        """, [cluster_id])
-
-        cluster_row = cursor.fetchone()
-        if not cluster_row:
-            return None
-
         # Build the full tree starting from root
-        root_cluster = build_cluster_tree(conn, cluster_row[0], include_points, include_metadata, page_size)
+        root_cluster = build_cluster_tree(conn, cluster_id, include_points, include_metadata, page_size)
         return root_cluster
 
     except Exception as e:
@@ -148,15 +139,27 @@ def build_cluster_tree(conn, cluster_id: int, include_points: bool = False, incl
             sub_cluster = build_cluster_tree(conn, sub_row[0], include_points, include_metadata, page_size)
             if sub_cluster:
                 sub_clusters.append(sub_cluster)
-        next_cursor = str(points[-1].point_id) if len(points) == page_size else None
-        paged_points = PagedPoints(data=points, meta=PageMeta(next_cursor=next_cursor))
-        # Create cluster data object
-        cluster_data = ClusterData(
-            cluster=cluster,
-            points=paged_points,
-            sub_clusters=sub_clusters
-        )
+        debates = get_debates(cluster_id)
+        print(debates)
+        if include_points:
+            next_cursor = str(points[-1].point_id) if len(points) == page_size else None
+            paged_points = PagedPoints(data=points, meta=PageMeta(next_cursor=next_cursor))
         
+            # Create cluster data object
+            cluster_data = ClusterData(
+                cluster=cluster,
+                points=paged_points,
+                sub_clusters=sub_clusters,
+                debates=debates
+                )
+        else:
+            cluster_data = ClusterData(
+                cluster=cluster,
+                points=None,
+                sub_clusters=sub_clusters,
+                debates=debates
+            )
+
         # Add metadata if requested
         if include_metadata:
             cluster_data.contributors = get_contributors(cluster_data)
@@ -170,7 +173,7 @@ def build_cluster_tree(conn, cluster_id: int, include_points: bool = False, incl
 
 
 
-def get_proportions(cluster: ClusterData) -> List[Tuple[Party, int]]:
+def get_proportions(cluster: ClusterData) -> List[PartyProportion]:
     """Extracts proportions from a cluster by counting points grouped by party."""
     if not cluster or not cluster.cluster_id:
         return []
@@ -201,7 +204,6 @@ def get_proportions(cluster: ClusterData) -> List[Tuple[Party, int]]:
         cursor.execute(query, [cluster.cluster_id])
         results = cursor.fetchall()
         
-        # Convert to list of tuples (Party, count)
         proportions = []
         for row in results:
             party = Party(
@@ -215,7 +217,7 @@ def get_proportions(cluster: ClusterData) -> List[Tuple[Party, int]]:
                 government_type=row[7],
                 is_independent_party=row[8]
             )
-            proportions.append((party, row[9]))
+            proportions.append(PartyProportion(party=party,count=row[9]))
         
         return proportions
         
@@ -272,6 +274,40 @@ def get_contributors(cluster: ClusterData, limit: int = 5) -> List[Member]:
         cursor.close()
         conn.close()
 
+def get_debates(cluster_id: int) -> Optional[List[Debate]]:
+    """Retrieve debates associated with a cluster."""
+    from ..utils.database_utils import get_db_connection
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    try:
+        cursor.execute("""
+            SELECT DISTINCT d.ext_id, d.title, d.date
+            FROM debate d
+            JOIN contribution ctr ON ctr.debate_ext_id = d.ext_id
+            JOIN point p ON p.contribution_item_id = ctr.item_id
+            JOIN cluster_points cp ON cp.point_id = p.point_id
+            WHERE cp.cluster_id = %s
+        """, [cluster_id])
+
+        rows = cursor.fetchall()
+        debates = []
+        for row in rows:
+            debates.append(Debate(
+                ext_id=row[0],
+                title=row[1],
+                date=datetime.strftime(row[2], "%Y-%m-%d")
+            ))
+
+        return debates if debates else None
+
+    except Exception as e:
+        print(f"Error retrieving debates for cluster {cluster_id}: {e}")
+        return None
+    finally:
+        cursor.close()
+
 def get_cluster_points_after(conn, cluster_id: int, after_id: int, page_size: int = 50) -> PagedPoints:
     cur = conn.cursor()
     cur.execute("""
@@ -291,7 +327,6 @@ def get_cluster_points_after(conn, cluster_id: int, after_id: int, page_size: in
 
 def create_job(params: dict) -> int:
     from ..utils.database_utils import get_db_connection
-
     conn = get_db_connection()
     try:
         with conn.cursor() as cur:
@@ -335,7 +370,7 @@ def finalise_job(job_id: int):
             cur.execute("UPDATE clusters SET is_draft=FALSE WHERE job_id=%s", [job_id])
             cur.execute("""
                 UPDATE cluster_jobs
-                   SET status='complete', progress=1, finished_at=now()
+                   SET status='complete', finished_at=now()
                  WHERE job_id=%s
             """, [job_id])
         conn.commit()
@@ -348,18 +383,68 @@ def get_job_status(job_id):
     conn = get_db_connection()
     try:
         with conn.cursor() as cur:
-            cur.execute("SELECT status, error FROM cluster_jobs WHERE job_id=%s", [job_id])
+            cur.execute("SELECT status, error, root_cluster_id FROM cluster_jobs WHERE job_id=%s", [job_id])
             row = cur.fetchone()
             if row:
+                
                 return {
                     "status": row[0],
-                    "error": row[1]
+                    "error": row[1],
+                    "root_cluster_id": row[2]
                 }
     except:
         raise Exception
 
+def get_root_cluster_by_job_id(conn, job_id: int) -> Optional[int]:
+    """Retrieve the root cluster ID for a given job ID."""
+    cursor = conn.cursor()
+    try:
+        cursor.execute("""
+            SELECT root_cluster_id FROM cluster_jobs WHERE job_id=%s
+        """, [job_id])
+        row = cursor.fetchone()
+        return row[0] if row else None
+    except:
+        raise Exception
+    finally:
+        cursor.close()
 
-
+def get_points_clusters_for_debate(conn, debate_ext_id: str) -> List[Dict]:
+    """
+    Get all points, their clusters, and debate info for a given debate_ext_id.
+    """
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT
+            p.point_id,
+            p.point_value,
+            c.cluster_id,
+            cl.title AS cluster_title,
+            d.ext_id AS debate_ext_id,
+            d.title AS debate_title,
+            d.date AS debate_date
+        FROM debate d
+        JOIN contribution ctr ON ctr.debate_ext_id = d.ext_id
+        JOIN point p ON p.contribution_item_id = ctr.item_id
+        JOIN cluster_points c ON c.point_id = p.point_id
+        JOIN clusters cl ON cl.cluster_id = c.cluster_id
+        WHERE d.ext_id = %s
+        ORDER BY cl.cluster_id, p.point_id
+    """, [debate_ext_id])
+    results = cursor.fetchall()
+    cursor.close()
+    return [
+        {
+            "point_id": r[0],
+            "point_value": r[1],
+            "cluster_id": r[2],
+            "cluster_title": r[3],
+            "debate_ext_id": r[4],
+            "debate_title": r[5],
+            "debate_date": r[6],
+        }
+        for r in results
+    ]
 
 
 

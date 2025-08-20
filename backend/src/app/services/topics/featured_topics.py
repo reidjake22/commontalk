@@ -4,7 +4,8 @@ from modules.utils.cluster_utils import get_cluster_by_id, get_cluster_by_setup,
 from modules.utils.executor_utils import submit
 from modules.cluster.run import run_clustering
 from datetime import datetime, timedelta
-from .models import FeaturedTopic, JobNotification
+from .models import FeaturedTopic
+from ...common.models import JobNotification
 from .mappers import map_cluster_to_featured_topics
 from app.common.errors import ErrorSchema
 from typing import List, Dict, Union
@@ -57,9 +58,14 @@ def run(target_date="2025-07-16") -> Union[List[FeaturedTopic], JobNotification]
         conn.close()
 
 def submit_cluster_run(filters, config,):
-    job_id = create_job()
-    config["job_id"] = job_id
     config["search"] = False
+    params = {
+        "filters": filters,
+        "config": config
+    }
+    job_id = create_job(params)
+    config["job_id"] = job_id
+    
     submit(run_clustering, config, filters)
     return job_id
 

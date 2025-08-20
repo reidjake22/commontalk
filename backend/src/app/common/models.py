@@ -1,3 +1,3 @@
 from pydantic import BaseModel
 class JobNotification(BaseModel):
-    {"job_id": str}
+    job_id: int

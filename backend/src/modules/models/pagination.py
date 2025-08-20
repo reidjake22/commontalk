@@ -6,8 +6,8 @@ T = TypeVar("T")
 
 
 class PageMeta(BaseModel):
-    next_cursor: Optional[str] = None
-    prev_cursor: Optional[str] = None
+    next_cursor: Optional[int] = None
+    prev_cursor: Optional[int] = None
     total_count: Optional[int] = None
 
 class PagedResponse(Generic[T], BaseModel):

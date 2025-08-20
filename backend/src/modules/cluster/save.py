@@ -39,4 +39,5 @@ def save_cluster(conn, cluster: Dict) -> int:
         conn.rollback()
         raise e
     finally:
+        conn.commit()
         cursor.close()

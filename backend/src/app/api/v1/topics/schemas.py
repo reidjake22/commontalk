@@ -67,8 +67,8 @@ class RichPointOut(BaseModel):
 
 
 class PageMetaOut(BaseModel):
-    next_cursor: Optional[str] = None
-    prev_cursor: Optional[str] = None
+    next_cursor: Optional[int] = None
+    prev_cursor: Optional[int] = None
     total_count: Optional[int] = None
 
 class PagedResponseOut(Generic[T], BaseModel):
@@ -89,9 +89,10 @@ class SingleTopicOut(BaseModel):
     topic_id: str
     title: Optional[str] = None
     summary: Optional[str] = None
-    points: PagedPointsOut = Field(default_factory=list)
+    points: Optional[PagedPointsOut] = None
     contributors: List[LightMemberOut] = Field(default_factory=list)
     proportions: List[PartyProportionOut] = Field(default_factory=list)
+    debates: Optional[List[DebateOut]] = None
     sub_topics: Optional[List[FeaturedTopicOut]] = Field(default_factory=list)
 
 class FeaturedTopicsOut(BaseModel):

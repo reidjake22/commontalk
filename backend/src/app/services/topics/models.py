@@ -1,4 +1,4 @@
-from typing import List, Optional, Dict, Generic, TypeVar
+from typing import List, Optional
 from pydantic import BaseModel, Field
 from modules.models.database import Point, Debate, Contribution
 from modules.models.pagination import PagedResponse
@@ -48,8 +48,9 @@ class SingleTopic(BaseModel):
     title: Optional[str] = None
     summary: Optional[str] = None
     contributors: List[LightMember] = []
-    proportions: List[PartyProportion] = []
+    proportions: List[LightPartyProportion] = []
     sub_topics: Optional[List[FeaturedTopic]] = None
     points: Optional[PagedRichPoints] = None
+    debates: Optional[List[Debate]] = None  # List of debates related to the topic
 
 

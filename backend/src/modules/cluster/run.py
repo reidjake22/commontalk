@@ -8,25 +8,44 @@ from datetime import datetime
 # Relative Imports
 from .recursion import cluster_recursive
 from ..utils.database_utils import get_db_connection
-from ..utils.cluster_utils import finalise_job, create_job
+from ..utils.cluster_utils import finalise_job
 from .config import default_config
-from .retrieve_points import get_points
+from .retrieve_points import get_points, get_top_points_by_embedding
 
 #### MAIN FUNCTION ######
 def run_clustering(config, filters: Optional[Dict] = None) -> Dict:
+    print(config)
     conn = get_db_connection()
     filters = filters or {}
     print(f"Running clustering with filters: {filters}")
-    points = get_points(conn, filters)
+    if filters.get("member"):
+        filters["member_ids"] = [filters["member"]]
+    if config.get("search") and filters.get("query"):
+        points = get_top_points_by_embedding(conn, filters, filters['query'] )
+    else:
+        points = get_points(conn, filters)
     if not points:
         logging.warning("No points found for clustering.")
         return {}
     current_depth = 0
     clusters = cluster_recursive(conn, points, config, filters, current_depth)
-    finalise_job(config['run_id'])
+    print("done with clustering")
+    cursor = conn.cursor()
+    cursor.execute("""
+    UPDATE cluster_jobs
+    SET root_cluster_id = %s
+    WHERE job_id = %s
+    """, [
+        clusters['cluster_id'] if clusters else None,  # Set root_cluster_id to the first cluster's ID or None
+        config['job_id']
+    ])
     conn.commit()
     conn.close()
+    print("Updating job with root cluster ID:", clusters.get('cluster_id'))
+    finalise_job(config['job_id'])
+    print("Clustering job finalised")
     clean_clusters = strip_embeddings(clusters)
+    print("returning clean clusters")
     return clean_clusters
 
 def strip_embeddings(data):

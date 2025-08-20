@@ -1,6 +1,5 @@
 import psycopg2
-from typing import Dict
-import base64, json
+
 
 def get_db_connection():
     return psycopg2.connect(
@@ -10,4 +9,3 @@ def get_db_connection():
         password="parliament_pass",
         port=5432
     )
-

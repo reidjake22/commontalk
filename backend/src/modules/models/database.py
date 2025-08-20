@@ -67,4 +67,4 @@ class Cluster(BaseModel):
     created_at: Optional[datetime] = None
     filters_used: Optional[Dict[str, Any]] = None
     config: Optional[Dict[str, Any]] = None
-    
+

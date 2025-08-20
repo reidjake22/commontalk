@@ -43,3 +43,4 @@ def cluster_recursive(conn, points: List[Dict], config, filters, current_depth, 
         cluster["sub_clusters"].append(sub_cluster)
 
     return cluster
+

@@ -1,6 +1,6 @@
 from typing import Optional, List, Tuple
 from pydantic import BaseModel, Field
-from .database import Cluster, Member, Party
+from .database import Cluster, Member, Party, Debate
 from .pagination import PagedPoints
 # Define the cluster structure with Pydantic
 class ClusterPoint(BaseModel):
@@ -19,7 +19,7 @@ class ClusterData(BaseModel):
     # Computed metadata
     contributors: Optional[List[Member]] = None
     proportions: Optional[List[Tuple[Party, int]]] = None  # (Party object, count)
-    
+    debates: Optional[List[Debate]] = None
     @property
     def cluster_id(self) -> int:
         return self.cluster.cluster_id
