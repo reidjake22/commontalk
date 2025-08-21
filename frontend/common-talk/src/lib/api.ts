@@ -45,7 +45,9 @@ export async function pollJob(jobId: string, signal?: AbortSignal): Promise<{
 }> {
   const res = await fetch(`/api/v1/polling/${jobId}`, { signal, cache: "no-store" });
   if (!res.ok) throw new Error(`Polling failed: ${res.status}`);
-  return res.json();
+  const data = await res.json();
+  console.log(data);
+  return data;
 }
 
 export async function getFeaturedTopicsByJob(jobId: string, signal?: AbortSignal): Promise<any> {

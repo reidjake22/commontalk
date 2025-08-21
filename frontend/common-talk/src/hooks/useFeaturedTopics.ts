@@ -47,7 +47,7 @@ export function useFeaturedTopics() {
             await sleep(1500);
             continue;
           }
-          console.log("about to poll")
+          console.log("about to poll", jobId);
           const statusResp = await pollJob(jobId!, ctrl.signal);
           console.log(statusResp);
           if (statusResp.status === "complete") {
@@ -75,6 +75,7 @@ export function useFeaturedTopics() {
           delay = Math.min(maxDelay, Math.round(delay * 1.6));
         }
       } catch (e: any) {
+        console.log(e?.name, e?.message);
         if (e?.name !== "AbortError") {
           console.log(e?.message ? e.message : "Failed to fetch topics");
           setState({ topics: [], loading: false, error: e?.message ?? "Failed to fetch topics" });
