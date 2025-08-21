@@ -2,7 +2,6 @@
 // =============================================
 import { Link } from "react-router-dom";
 import type { LightMemberOut, RichPointOut } from "../lib/topic-api";
-import { resolvePartyByString } from "../lib/party-resolver";
 import { PARTY_CONFIG } from "../lib/party";
 
 /** Remove any angle-bracket tags, return clean text */
@@ -19,7 +18,11 @@ function capitalisePoint(text?: string | null): string {
 
 
 export function ContributorRow({ m }: { m: LightMemberOut }) {
-  const { name, color } = PARTY_CONFIG[m.latest_party_membership];
+  const partyMembership = m.latest_party_membership;
+  const { name, color } =
+    partyMembership != null && PARTY_CONFIG.hasOwnProperty(partyMembership)
+      ? PARTY_CONFIG[partyMembership as unknown as keyof typeof PARTY_CONFIG]
+      : { name: "Unknown", color: "#ccc" };
   return (
     <Link to={`/people/${m.member_id}`} className="flex items-center gap-3 group">
       {/* Member name with party color background */}

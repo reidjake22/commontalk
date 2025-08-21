@@ -22,8 +22,13 @@ export function useFeaturedTopics() {
         setError(null);
         const data = await getFeaturedTopics(controller.signal);
         // If API returns { topics: [...] }
-        if (data && Array.isArray(data.topics)) {
-          setTopics(data.topics);
+        if (data && Array.isArray(data.sub_topics)) {
+          setTopics(
+            data.sub_topics.map((topic: any) => ({
+              ...topic,
+              title: topic.title ?? "",
+            }))
+          );
         } else {
           setTopics([]);
           setError("Unexpected API shape");

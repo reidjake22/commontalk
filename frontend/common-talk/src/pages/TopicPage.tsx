@@ -12,7 +12,6 @@ import {
 
 import {
     type PageMeta,
-  type PagedResponse,
 } from "../lib/types";
 import { PartyProportionsBar } from "../components/PartyProportionsBar";
 import { ContributorRow, PointsList, ContributionPreview, DebatePills } from "./TopicPage.parts";
@@ -246,30 +245,6 @@ export default function TopicPage() {
     return visiblePoints.find((p) => String(p.point.point_id) === String(selectedPointId));
   }, [visiblePoints, selectedPointId]);
 
-  // Derived (based on currently visible items)
-  const topDebates = useMemo(() => {
-    const m = new Map<
-      string,
-      { id: string; title: string; date?: string; summary: string; count: number }
-    >();
-    for (const rp of visiblePoints) {
-      const id = rp.debate.ext_id;
-      const cur =
-        m.get(id) ||
-        {
-          id,
-          title: rp.debate.title,
-          date: rp.debate.date,
-          summary: rp.contribution.contribution_value || "",
-          count: 0,
-        };
-      cur.count += 1;
-      if (!cur.summary && rp.contribution.contribution_value) cur.summary = rp.contribution.contribution_value;
-      m.set(id, cur);
-    }
-    return Array.from(m.values()).sort((a, b) => b.count - a.count).slice(0, 6);
-  }, [visiblePoints]);
-
   const stats = useMemo(() => {
     const debatesCount = new Set(visiblePoints.map((p) => p.debate.ext_id)).size;
     const contributorsCount = activeTopic?.contributors?.length ?? 0;
@@ -340,7 +315,7 @@ export default function TopicPage() {
   }
 
   // Hero subtopics (root’s or selected sub’s children)
-  const heroSubtopics = selectedSubId ? (activeTopic.sub_topics ?? []) : (rootData.sub_topics ?? []);
+  //const heroSubtopics = selectedSubId ? (activeTopic.sub_topics ?? []) : (rootData.sub_topics ?? []);
   const selectedSub =
     selectedSubId
       ? (loadedSubs[selectedSubId] ||

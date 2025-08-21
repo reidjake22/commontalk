@@ -1,21 +1,14 @@
 // File: src/pages/Home.tsx
 // =============================================
-import { useMemo } from "react";
+
 import { FeaturedTopics } from "../components/FeaturedTopics";
 import { useFeaturedTopics } from "../hooks/useFeaturedTopics";
-import type { Debate, Person, FeaturedTopicOut } from "../lib/types";
+import type { FeaturedTopicOut } from "../lib/types";
 
 
 export default function Home() {
   const { topics, loading, error } = useFeaturedTopics();
 
-  const debates: Debate[] = useMemo(() => [
-    { id: 147, title: "Should the UK Rejoin the EU Single Market?", summary: "Heated parliamentary discussion..." },
-  ], []);
-
-  const people: Person[] = useMemo(() => [
-    { id: 47, name: "Rt Hon Jeremy Hunt", role: "Chancellor", avatar: "" },
-  ], []);
 
   if (loading) {
     return (

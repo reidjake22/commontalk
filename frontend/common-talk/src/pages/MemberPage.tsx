@@ -17,14 +17,14 @@ function fmtDate(iso?: string | null) {
   return d.toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" });
 }
 
-function rangeToDates(days = 30) {
-  const now = new Date();
-  const end_date = now.toISOString().slice(0, 10);
-  const start = new Date(now);
-  start.setDate(now.getDate() - days);
-  const start_date = start.toISOString().slice(0, 10);
-  return { start_date, end_date };
-}
+// function rangeToDates(days = 30) {
+//   const now = new Date();
+//   const end_date = now.toISOString().slice(0, 10);
+//   const start = new Date(now);
+//   start.setDate(now.getDate() - days);
+//   const start_date = start.toISOString().slice(0, 10);
+//   return { start_date, end_date };
+// }
 
 /* ===== Minimal types used on this page ===== */
 type DebateCard = { extId: string; title: string; date?: string | null; house?: string | null };

@@ -86,7 +86,7 @@ function houseLabel(h?: string | number | null): string | null {
 /* ================= Tiny helpers ================= */
 function partyKeyFromName(s?: string | null) {
   if (!s) return undefined as keyof typeof PARTY_CONFIG | undefined;
-  return resolvePartyByString(s) as keyof typeof PARTY_CONFIG | undefined;
+  return resolvePartyByString(s) as unknown as keyof typeof PARTY_CONFIG | undefined;
 }
 function partyColorHexFromName(s?: string | null): string | null {
   const pk = partyKeyFromName(s);
@@ -154,7 +154,11 @@ function geoToPath(geo: any, size = 200) {
 }
 
 /** Build stripe segments from candidates (sorted desc voteShare) */
-function toStripes(cands: LatestElection["value"]['candidates'] | undefined) {
+function toStripes(cands: Array<{
+  name?: string;
+  voteShare?: number;
+  party?: { name?: string; abbreviation?: string; backgroundColour?: string } | null;
+}> | undefined) {
   if (!cands || !cands.length) return [] as Array<{ w: number; color: string; title: string }>;
   const sum = cands.reduce((a, b) => a + (b.voteShare || 0), 0) || 1;
   const sorted = [...cands].sort((a, b) => (b.voteShare || 0) - (a.voteShare || 0));

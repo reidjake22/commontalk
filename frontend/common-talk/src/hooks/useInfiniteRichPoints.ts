@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { fetchClusterRichPoints } from "../lib/points-api";
 import type { RichPointOut } from "../lib/topic-api";
 import type { PagedResponse, PageMeta } from "../lib/types";

@@ -9,7 +9,7 @@ export interface ContributionBarProps {
 }
 
 export const ContributionBar = memo(function ContributionBar({ proportions, variant = "default" }: ContributionBarProps) {
-  const { total, filtered, compact, barSegments } = useMemo(() => {
+  const { total, filtered, barSegments } = useMemo(() => {
     const total = proportions.reduce((s, [, v]) => s + v, 0);
     const compact = variant === "compact";
 
@@ -28,7 +28,7 @@ export const ContributionBar = memo(function ContributionBar({ proportions, vari
       };
     });
 
-    return { total, filtered, compact, barSegments };
+    return { total, filtered, barSegments };
   }, [proportions, variant]);
 
   if (total === 0) return null;

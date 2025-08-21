@@ -1,6 +1,6 @@
 // File: src/lib/api.ts
 // =============================================
-import type { FeaturedTopicsResponse } from "./types";
+import type { FeaturedTopicOut } from "./topic-api";
 
 const API_BASE =
   (import.meta as any)?.env?.VITE_API_BASE_URL ||
@@ -22,7 +22,7 @@ async function fetchJSON<T>(url: string, init?: RequestInit, retry = 1): Promise
 
 export function getFeaturedTopics(signal?: AbortSignal) {
   const url = `${API_BASE}/api/v1/topics/featured`;
-  return fetchJSON<FeaturedTopicsResponse>(url, {
+  return fetchJSON<FeaturedTopicOut>(url, {
     signal,
     headers: { Accept: "application/json" },
   });

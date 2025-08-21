@@ -1,6 +1,6 @@
 // File: src/components/ui/Tile.tsx
 // =============================================
-import { forwardRef } from "react";
+import React, { forwardRef, type JSX } from "react";
 
 /**
  * Card/Tile primitive to keep elevation, radii, borders and hover effects consistent.
