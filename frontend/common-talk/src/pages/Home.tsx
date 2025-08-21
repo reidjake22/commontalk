@@ -5,7 +5,7 @@ import type { FeaturedTopicOut } from "../lib/types";
 
 export default function Home() {
   const { topics, loading, error } = useFeaturedTopics();
-
+  console.log(error);
   if (loading) {
     return (
       <main className="mx-auto w-full max-w-6xl px-4 py-8">

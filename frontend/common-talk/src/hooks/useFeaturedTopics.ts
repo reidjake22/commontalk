@@ -39,7 +39,7 @@ export function useFeaturedTopics() {
         // Poll with exponential backoff up to a cap (e.g., 5s)
         runningRef.current = true;
         let delay = 800; // ms
-        const maxDelay = 5000; // ms
+        const maxDelay = 2000; // ms
 
         while (runningRef.current && !unmountedRef.current) {
           // Pause polling when tab is hidden to avoid waste
@@ -47,9 +47,9 @@ export function useFeaturedTopics() {
             await sleep(1500);
             continue;
           }
-
+          console.log("about to poll")
           const statusResp = await pollJob(jobId!, ctrl.signal);
-
+          console.log(statusResp);
           if (statusResp.status === "complete") {
             console.log("something should be happening now")
             const data = await getFeaturedTopicsByJob(jobId!, ctrl.signal);

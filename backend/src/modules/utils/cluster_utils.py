@@ -402,6 +402,7 @@ def get_job_status(job_id):
 def get_root_cluster_by_job_id(conn, job_id: int) -> Optional[int]:
     """Retrieve the root cluster ID for a given job ID."""
     cursor = conn.cursor()
+    print(f"job id: {job_id}")
     try:
         cursor.execute("""
             SELECT cluster_id
