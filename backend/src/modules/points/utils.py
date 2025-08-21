@@ -55,6 +55,33 @@ def prepare_prompt(debate_title: str, contribution: Dict, past_contribution: Dic
     f"{contribution['contribution_value']}\n")
     return current_prompt
 
+def fetch_number_analysed_debates(conn, filters) -> int:
+    cursor = conn.cursor()
+    query = """
+        SELECT count(*) FROM debate WHERE analysed = FALSE
+        AND house = %s
+        AND EXISTS (
+        SELECT 1
+        FROM contribution
+        WHERE debate_ext_id = debate.ext_id AND member_id IS NOT NULL)
+        """
+    params = [filters.get("house", "Commons")]
+    
+    # Add date filters if provided
+    if filters.get("start_date"):
+        query += " AND date >= %s"
+        params.append(filters["start_date"])
+    
+    if filters.get("end_date"):
+        query += " AND date <= %s"
+        params.append(filters["end_date"])
+    
+    cursor.execute(query, params)
+    result = cursor.fetchone()
+    cursor.close()
+    return result[0] if result else 0
+    
+
 def fetch_unanalysed_debates(conn, batch_size, filters: Dict = {"house": "Commons"}) -> List[Dict]:
     """ Fetches debates that have not been analysed and have contributions with member_id. """
     cursor = conn.cursor()
@@ -103,3 +130,38 @@ def mark_as_analysed(conn, debate_ext_id: str):
     cursor.close()
     conn.commit()
     print(f"Debate {debate_ext_id} marked as analysed.")
+
+def fetch_debate_analysis_counts(conn, filters) -> Dict[str, int]:
+    """
+    Returns a dict with counts of analysed and unanalysed debates matching the filters.
+    """
+    cursor = conn.cursor()
+    query = """
+        SELECT
+            SUM(CASE WHEN analysed = TRUE THEN 1 ELSE 0 END) AS analysed_count,
+            SUM(CASE WHEN analysed = FALSE THEN 1 ELSE 0 END) AS unanalysed_count
+        FROM debate
+        WHERE house = %s
+        AND EXISTS (
+            SELECT 1
+            FROM contribution
+            WHERE debate_ext_id = debate.ext_id AND member_id IS NOT NULL
+        )
+    """
+    params = [filters.get("house", "Commons")]
+
+    if filters.get("start_date"):
+        query += " AND date >= %s"
+        params.append(filters["start_date"])
+
+    if filters.get("end_date"):
+        query += " AND date <= %s"
+        params.append(filters["end_date"])
+
+    cursor.execute(query, params)
+    result = cursor.fetchone()
+    cursor.close()
+    return {
+        "analysed": result[0] if result else 0,
+        "unanalysed": result[1] if result else 0
+    }

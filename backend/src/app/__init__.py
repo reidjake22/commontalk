@@ -4,10 +4,11 @@ from .common.errors import register_error_handlers
 from .logging import configure_logging
 from flask_cors import CORS
 from modules.utils.executor_utils import init_executor
-
+from modules.utils.job_utils import clear_jobs_on_startup
 
 def create_app() -> Flask:
     configure_logging()
+    clear_jobs_on_startup()
     application = Flask(__name__)
     CORS(application, origins=["https://commontalk.co.uk","https://www.commontalk.co.uk"])
     init_executor(max_workers=2)  # Initialize executor with a small queue size

@@ -72,12 +72,14 @@ def scrape_members() -> List[Dict]:
 def scrape_debates_and_contributions(start_date:str, end_date: str) -> tuple[List[Dict], List[Dict]]:
     """ Scrapes debates and their contributions. """
     debate_ids = scrape_debate_ids(start_date, end_date)
+    remaining_debate_ids = get_debates_not_added(debate_ids, start_date, end_date)
     print(f"Found {len(debate_ids)} debates.")
+    print(f"Found {len(remaining_debate_ids)} left to scrape")
     
     debates_data = []
     contributions_data = []
 
-    for i, debate_ext_id in enumerate(debate_ids):
+    for i, debate_ext_id in enumerate(remaining_debate_ids):
         if i % 50 == 0: print(f"Processing debate {i + 1}/{len(debate_ids)}: {debate_ext_id}")
         debate_data = scrape_debate_data(debate_ext_id)
 
@@ -166,3 +168,16 @@ def get_missing_parties(party_data: List[Dict], member_data: List[Dict]) -> List
             missing_parties.append(missing_party)
 
     return missing_parties
+
+def get_debates_not_added(debate_ids: List[str], start_date: str, end_date: str) -> List[str]:
+    """ Returns a list of debate IDs that are not already in the database. """
+    from modules.utils.database_utils import get_db_connection
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT ext_id FROM debate WHERE date >= %s AND date <= %s;
+    """, (start_date, end_date))
+    existing_debate_ids = {row[0] for row in cursor.fetchall()}
+    cursor.close()
+    conn.close()
+    return list(set(debate_ids) - existing_debate_ids)

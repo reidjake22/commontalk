@@ -454,4 +454,33 @@ def get_points_clusters_for_debate(conn, debate_ext_id: str) -> List[Dict]:
     ]
 
 
-
+def get_job_status_by_setup(conn, config: Dict, filters: Dict) -> Dict:
+    """
+    Get the job status for a specific cluster setup.
+    Returns None if no job exists for the given setup.
+    """
+    cursor = conn.cursor()
+    try:
+        cursor.execute("""
+            SELECT job_id, status
+            FROM cluster_jobs
+            WHERE params::jsonb @> %s::jsonb
+            AND params::jsonb @> %s::jsonb
+        """, [json.dumps(config), json.dumps(filters)])
+        
+        row = cursor.fetchone()
+        if row:
+            return {
+                "job_id": row[0],
+                "status": row[1],
+            }
+        else:
+            return {
+                "job_id": None,
+                "status": "not_found"
+            }
+    except Exception as e:
+        print(f"Error getting job status: {e}")
+        raise Exception("Failed to retrieve job status")
+    finally:
+        cursor.close()

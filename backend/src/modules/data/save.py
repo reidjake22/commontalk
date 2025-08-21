@@ -23,8 +23,10 @@ def save_debates(conn: psycopg2.extensions.connection, debates: List[Dict]) -> N
     for debate in debates:
         try:
             insert_debate(conn, debate)
+            conn.commit()
         except Exception as e:
             print(f"Error inserting debate {debate['ext_id']}: {e}")
+
 
 def save_contributions(conn: psycopg2.extensions.connection, contributions: List[Dict]) -> None:
     """ Saves contributions to the PostgreSQL database. """

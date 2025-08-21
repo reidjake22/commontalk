@@ -1,6 +1,6 @@
 # backend/src/app/services/topics/featured_topics.py
 from modules.utils.database_utils import get_db_connection
-from modules.utils.cluster_utils import get_cluster_by_id, get_cluster_by_setup, check_if_cluster_exists, create_job
+from modules.utils.cluster_utils import get_cluster_by_id, get_cluster_by_setup, check_if_cluster_exists, create_job, get_job_status_by_setup
 from modules.utils.executor_utils import submit
 from modules.cluster.run import run_clustering
 from datetime import datetime, timedelta
@@ -12,7 +12,7 @@ from typing import List, Dict, Union
 
 
 
-def run(target_date="2025-07-16") -> Union[List[FeaturedTopic], JobNotification]:
+def run(target_date="2025-07-16") -> JobNotification:
     conn = get_db_connection()
     try:
         conn = get_db_connection()
@@ -35,19 +35,17 @@ def run(target_date="2025-07-16") -> Union[List[FeaturedTopic], JobNotification]
     config = {"method": "kmeans", "skip_llm": False, "max_depth": 2, "min_points": 3, "n_clusters": 3, "n_clusters_base": 5}
 
     try:
-        exists = check_if_cluster_exists(conn, config=config, filters=filters)
-        if exists:
-            print("Cluster already exists, retrieving from database")
-            cluster = get_cluster_by_setup(conn, config=config, filters=filters, include_points=False, include_metadata=True)
-            print("Cluster retrieved successfully")
-            featured_topic = map_cluster_to_featured_topics(cluster)
-            print("Featured topics mapped successfully")
-        else:
-            print("Cluster does not exist, running clustering")
+        job_status = get_job_status_by_setup(conn, config=config, filters=filters)
+        job_id = job_status["job_id"]
+        job_progress = job_status["status"]
+        if not job_id:
+            print("No job found, running clustering")
             job_id = submit_cluster_run(filters=filters, config=config)
             return JobNotification(job_id=job_id)
-        print("Featured topics run successfully")
-        return featured_topic
+        elif job_progress == "queued":
+            return JobNotification(job_id=job_id)
+        else:
+            return JobNotification(job_id=job_id)
     except Exception as e:
         error_obj = ErrorSchema(message=str(e))
         print(f"Error during featured topics run: {e}")
