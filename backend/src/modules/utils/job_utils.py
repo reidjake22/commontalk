@@ -2,7 +2,7 @@ from .database_utils import get_db_connection
 import logging
 
 def clear_jobs_on_startup():
-    conn = get_db_connection
+    conn = get_db_connection()
     try:
         cursor = conn.cursor()
         cursor.execute("DELETE FROM jobs WHERE status = 'queued' OR status = 'in_progress'")
