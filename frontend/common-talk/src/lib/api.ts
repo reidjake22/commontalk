@@ -3,8 +3,8 @@
 import type { FeaturedTopicOut } from "./topic-api";
 
 const API_BASE =
-  (import.meta as any)?.env?.VITE_API_BASE_URL ||
-  "http://127.0.0.1:5000/"; // same-origin in dev when using a proxy
+  (import.meta as any)?.env?.VITE_API_BASE ||
+  "http://127.0.0.1:1000/"; // same-origin in dev when using a proxy
 
 async function fetchJSON<T>(url: string, init?: RequestInit, retry = 1): Promise<T> {
   try {

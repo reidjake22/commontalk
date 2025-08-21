@@ -1,7 +1,7 @@
 import { type RichPointOut } from "./topic-api";
 import { type PageMeta, type PagedResponse} from "./types.ts"
 
-const API_BASE = (import.meta as any).env?.VITE_API_BASE ?? "http://127.0.0.1:5000";
+const API_BASE = (import.meta as any).env?.VITE_API_BASE ?? "http://127.0.0.1:2500";
 
 function normalizeMeta(meta: any): PageMeta {
   return {

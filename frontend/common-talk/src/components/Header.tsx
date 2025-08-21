@@ -10,7 +10,7 @@ const NAV_ITEMS = [
 ] as const;
 
 // Read from env if you like (Vite example), else fallback to localhost
-const API_BASE = (import.meta as any).env?.VITE_API_BASE ?? "http://127.0.0.1:5000";
+const API_BASE = (import.meta as any).env?.VITE_API_BASE ?? "http://127.0.0.1:7000";
 
 function NavItem({ to, children }: { to: string; children: React.ReactNode }) {
   return (

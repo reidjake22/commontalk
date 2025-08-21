@@ -6,7 +6,7 @@ import { PointsList, ContributionPreview } from "./TopicPage.parts";
 import { getTopicDetail, type SingleTopicOut, type RichPointOut } from "../lib/topic-api";
 
 /* ===== Env bases (no Members base needed here) ===== */
-const API_BASE = (import.meta as any).env?.VITE_API_BASE ?? "http://127.0.0.1:5000";
+const API_BASE = (import.meta as any).env?.VITE_API_BASE ?? "http://127.0.0.1:7200";
 const HANSARD_BASE = (import.meta as any).env?.VITE_HANSARD_BASE ?? "/hansard";
 
 /* ===== Small helpers (only what we use here) ===== */
