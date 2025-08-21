@@ -43,7 +43,7 @@ export async function pollJob(jobId: string, signal?: AbortSignal): Promise<{
   job_id: string; status: "queued" | "running" | "complete" | "error";
   root_cluster_id?: string | null; error?: string | null;
 }> {
-  const res = await fetch(`/api/v1/polling/${jobId}`, { signal, cache: "no-store" });
+  const res = await fetch(`${API_BASE}/api/v1/polling/${jobId}`, { signal, cache: "no-store" });
   if (!res.ok) throw new Error(`Polling failed: ${res.status}`);
   const data = await res.json();
   console.log(data);
