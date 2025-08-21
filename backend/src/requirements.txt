@@ -5,3 +5,4 @@ openai
 groq
 scikit-learn
 dotenv
+gunicorn
