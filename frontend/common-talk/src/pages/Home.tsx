@@ -1,21 +1,24 @@
-// File: src/pages/Home.tsx
-// =============================================
-
+// src/pages/Home.tsx
 import { FeaturedTopics } from "../components/FeaturedTopics";
 import { useFeaturedTopics } from "../hooks/useFeaturedTopics";
 import type { FeaturedTopicOut } from "../lib/types";
 
-
 export default function Home() {
   const { topics, loading, error } = useFeaturedTopics();
-
 
   if (loading) {
     return (
       <main className="mx-auto w-full max-w-6xl px-4 py-8">
         <div className="animate-pulse space-y-6">
-          <div className="flex items-end justify-between"><div className="h-7 w-40 bg-gray-200 rounded" /><div className="h-4 w-64 bg-gray-200 rounded" /></div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">{[...Array(6)].map((_, i) => (<div key={i} className="h-32 bg-gray-200 rounded-xl" />))}</div>
+          <div className="flex items-end justify-between">
+            <div className="h-7 w-40 bg-gray-200 rounded" />
+            <div className="h-4 w-64 bg-gray-200 rounded" />
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {[...Array(6)].map((_, i) => (
+              <div key={i} className="h-32 bg-gray-200 rounded-xl" />
+            ))}
+          </div>
         </div>
       </main>
     );
@@ -35,16 +38,14 @@ export default function Home() {
             <p className="mt-1 opacity-90">{error}</p>
           </div>
         ) : topics.length === 0 ? (
-          <div className="mt-6 rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm text-gray-800">No trending topics right now. Check back shortly.</div>
+          <div className="mt-6 rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm text-gray-800">
+            No trending topics right now. Check back shortly.
+          </div>
         ) : (
           <div className="mt-6">
             <FeaturedTopics topics={topics as FeaturedTopicOut[]} />
           </div>
         )}
-
-        {/* Placeholders for other featured sections (keep components decoupled) */}
-        {/* <div className="mt-6"><FeaturedDebates debates={debates} big={false} /></div> */}
-        {/* <div className="mt-6"><FeaturedPeople members={people} big={false} /></div> */}
       </section>
     </main>
   );

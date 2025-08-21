@@ -27,3 +27,25 @@ export function getFeaturedTopics(signal?: AbortSignal) {
     headers: { Accept: "application/json" },
   });
 }
+
+// src/lib/api.ts
+export async function startFeaturedTopicsJob(signal?: AbortSignal): Promise<{ job_id: string }> {
+  const res = await fetch(`/api/v1/polling/featured`, { method: "POST", signal });
+  if (!res.ok) throw new Error(`Failed to start job: ${res.status}`);
+  return res.json();
+}
+
+export async function pollJob(jobId: string, signal?: AbortSignal): Promise<{
+  job_id: string; status: "queued" | "running" | "complete" | "error";
+  root_cluster_id?: string | null; error?: string | null;
+}> {
+  const res = await fetch(`/api/v1/polling/${jobId}`, { signal, cache: "no-store" });
+  if (!res.ok) throw new Error(`Polling failed: ${res.status}`);
+  return res.json();
+}
+
+export async function getFeaturedTopicsByJob(jobId: string, signal?: AbortSignal): Promise<any> {
+  const res = await fetch(`/api/v1/topics/featured/${jobId}`, { signal, cache: "no-store" });
+  if (!res.ok) throw new Error(`Fetching topics failed: ${res.status}`);
+  return res.json(); // expect FeaturedTopicsOut shape
+}

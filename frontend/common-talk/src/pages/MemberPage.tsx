@@ -7,6 +7,7 @@ import { getTopicDetail, type SingleTopicOut, type RichPointOut } from "../lib/t
 
 /* ===== Env bases (no Members base needed here) ===== */
 const API_BASE = (import.meta as any).env?.VITE_API_BASE ?? "http://127.0.0.1:7200";
+console.log(API_BASE)
 const HANSARD_BASE = (import.meta as any).env?.VITE_HANSARD_BASE ?? "/hansard";
 
 /* ===== Small helpers (only what we use here) ===== */

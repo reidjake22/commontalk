@@ -4,12 +4,11 @@ from modules.utils.cluster_utils import get_cluster_by_id, get_cluster_by_setup,
 from modules.utils.executor_utils import submit
 from modules.cluster.run import run_clustering
 from datetime import datetime, timedelta
-from .models import FeaturedTopic
+from ..topics.models import FeaturedTopic
 from ...common.models import JobNotification
-from .mappers import map_cluster_to_featured_topics
+from ..topics.mappers import map_cluster_to_featured_topics
 from app.common.errors import ErrorSchema
 from typing import List, Dict, Union
-
 
 
 def run(target_date="2025-07-16") -> JobNotification:
@@ -37,15 +36,12 @@ def run(target_date="2025-07-16") -> JobNotification:
     try:
         job_status = get_job_status_by_setup(conn, config=config, filters=filters)
         job_id = job_status["job_id"]
-        job_progress = job_status["status"]
+        job_status = job_status["status"]
         if not job_id:
             print("No job found, running clustering")
             job_id = submit_cluster_run(filters=filters, config=config)
-            return JobNotification(job_id=job_id)
-        elif job_progress == "queued":
-            return JobNotification(job_id=job_id)
-        else:
-            return JobNotification(job_id=job_id)
+        return JobNotification(job_id=job_id, status=job_status)
+
     except Exception as e:
         error_obj = ErrorSchema(message=str(e))
         print(f"Error during featured topics run: {e}")

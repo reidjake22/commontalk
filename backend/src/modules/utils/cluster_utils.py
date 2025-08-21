@@ -391,9 +391,9 @@ def get_job_status(job_id):
             if row:
                 
                 return {
+                    "job_id": job_id,
                     "status": row[0],
                     "error": row[1],
-                    "root_cluster_id": root_cluster_id
                 }
             
     except:
