@@ -1,9 +1,7 @@
 from flask import Blueprint
-from spectree import Response
 from .schemas import PollOut
 from ....common.errors import ErrorSchema
 from app.services.job_polling.polling import poll_job
-from app import api_spec
 
 bp = Blueprint("polling", __name__)
 

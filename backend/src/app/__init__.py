@@ -1,25 +1,22 @@
 # src/app/__init__.py
 from flask import Flask
-from spectree import SpecTree
 from .common.errors import register_error_handlers
 from .logging import configure_logging
 from flask_cors import CORS
 from modules.utils.executor_utils import init_executor
 
-api_spec = SpecTree("flask", title="Common Talk API", version="1.0.0", path="apidoc", mode="strict")
 
 def create_app() -> Flask:
     configure_logging()
-    app = Flask(__name__)
-    CORS(app, origins=["http://localhost:5173"])  # Allow your frontend dev server
+    application = Flask(__name__)
+    CORS(application, origins=["https://commontalk.co.uk","https://www.commontalk.co.uk"])
     init_executor(max_workers=2)  # Initialize executor with a small queue size
     from .api.v1 import register_v1
-    register_error_handlers(app)
-    register_v1(app)
+    register_error_handlers(application)
+    register_v1(application)
     
-    @app.route('/health')
+    @application.route('/health')
     def health_check():
         return {"status": "ok"}, 200
-    
-    api_spec.register(app)
-    return app
+
+    return application

@@ -4,3 +4,4 @@ requests
 openai
 groq
 scikit-learn
+dotenv

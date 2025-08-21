@@ -367,7 +367,7 @@ def finalise_job(job_id: int):
     try:
         with conn.cursor() as cur:
             # flip all clusters written by this job from draft→final
-            cur.execute("UPDATE clusters SET is_draft=FALSE WHERE job_id=%s", [job_id])
+            cur.execute("UPDATE clusters SET visible=TRUE WHERE job_id=%s", [job_id])
             cur.execute("""
                 UPDATE cluster_jobs
                    SET status='complete', finished_at=now()
@@ -383,15 +383,19 @@ def get_job_status(job_id):
     conn = get_db_connection()
     try:
         with conn.cursor() as cur:
-            cur.execute("SELECT status, error, root_cluster_id FROM cluster_jobs WHERE job_id=%s", [job_id])
+            cur.execute("SELECT status, error, FROM cluster_jobs WHERE job_id=%s", [job_id])
             row = cur.fetchone()
+            cur.close()
+            if row[0] == "completed":
+                root_cluster_id = get_root_cluster_by_job_id(conn, job_id)
             if row:
                 
                 return {
                     "status": row[0],
                     "error": row[1],
-                    "root_cluster_id": row[2]
+                    "root_cluster_id": root_cluster_id
                 }
+            
     except:
         raise Exception
 
@@ -400,7 +404,10 @@ def get_root_cluster_by_job_id(conn, job_id: int) -> Optional[int]:
     cursor = conn.cursor()
     try:
         cursor.execute("""
-            SELECT root_cluster_id FROM cluster_jobs WHERE job_id=%s
+            SELECT cluster_id
+            FROM cluster
+            WHERE layer = 0
+            AND job_id = %s
         """, [job_id])
         row = cursor.fetchone()
         return row[0] if row else None

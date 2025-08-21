@@ -1,0 +1,14 @@
+Metadata-Version: 2.4
+Name: commontalk-backend
+Version: 0.1.0
+Requires-Python: >=3.11
+Requires-Dist: Flask
+Requires-Dist: gunicorn
+Requires-Dist: flask-cors
+Requires-Dist: psycopg2-binary
+Requires-Dist: requests
+Requires-Dist: openai
+Requires-Dist: groq
+Requires-Dist: scikit-learn
+Requires-Dist: dotenv
+Requires-Dist: gunicorn

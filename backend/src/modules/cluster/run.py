@@ -29,19 +29,7 @@ def run_clustering(config, filters: Optional[Dict] = None) -> Dict:
         return {}
     current_depth = 0
     clusters = cluster_recursive(conn, points, config, filters, current_depth)
-    print("done with clustering")
-    cursor = conn.cursor()
-    cursor.execute("""
-    UPDATE cluster_jobs
-    SET root_cluster_id = %s
-    WHERE job_id = %s
-    """, [
-        clusters['cluster_id'] if clusters else None,  # Set root_cluster_id to the first cluster's ID or None
-        config['job_id']
-    ])
-    conn.commit()
     conn.close()
-    print("Updating job with root cluster ID:", clusters.get('cluster_id'))
     finalise_job(config['job_id'])
     print("Clustering job finalised")
     clean_clusters = strip_embeddings(clusters)

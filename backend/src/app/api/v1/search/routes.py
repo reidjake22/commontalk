@@ -1,9 +1,7 @@
 from flask import Blueprint, request, jsonify
-from spectree import Response
 from ....common.models import JobNotification
 from ....common.errors import ErrorSchema
 from app.services.search.search import search as post_search
-from app import api_spec
 
 bp = Blueprint("search", __name__)
 

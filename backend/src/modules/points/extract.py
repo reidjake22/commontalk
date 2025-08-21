@@ -1,5 +1,6 @@
 from groq import Groq
 import json
+import os
 from typing import List
 from .utils import clean_llm_response
 from ..utils.message_utils import messages
@@ -7,7 +8,7 @@ from .prompts import system_prompt
 
 def extract_points(model_input, retries=3) -> List[str]:
     """ Generates points for a given prompt and input. """
-    client = Groq(api_key="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")
+    client = Groq(api_key=os.getenv("GROQ_API_KEY"))
     message_list = messages(system_prompt, model_input)
     response = client.chat.completions.create(
         model="llama-3.3-70b-versatile",

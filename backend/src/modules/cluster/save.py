@@ -8,7 +8,7 @@ def save_cluster(conn, cluster: Dict) -> int:
     try:
         # Insert cluster record - ADD config column, REMOVE method column
         cursor.execute("""
-            INSERT INTO clusters (parent_cluster_id, title, summary, layer, created_at, filters_used, config, job_id, is_draft)
+            INSERT INTO clusters (parent_cluster_id, title, summary, layer, created_at, filters_used, config, job_id, visible)
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, FALSE)
             RETURNING cluster_id;
         """, (

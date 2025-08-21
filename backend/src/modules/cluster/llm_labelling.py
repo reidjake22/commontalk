@@ -17,7 +17,7 @@ def summarise_cluster(cluster_points: List, title: str) -> str:
     {' | '.join(point_texts)}"""
 
     try:
-        client = Groq(api_key=os.getenv("GROQ_API_KEY", "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"))
+        client = Groq(api_key=os.getenv("GROQ_API_KEY"))
         
         response = client.chat.completions.create(
             model="llama-3.3-70b-versatile",
@@ -45,7 +45,7 @@ def title_cluster(cluster_points: List) -> str:
     Please only return a single phrase (2-4 words) that describes the category."""
 
     try:
-        client = Groq(api_key=os.getenv("GROQ_API_KEY", "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"))
+        client = Groq(api_key=os.getenv("GROQ_API_KEY"))
         
         response = client.chat.completions.create(
             model="llama-3.3-70b-versatile",
