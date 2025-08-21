@@ -81,7 +81,7 @@ export type SingleTopicOut = {
   sub_topics?: SingleTopicOut[] | null;
 };
 
-const API_BASE = "http://127.0.0.1:5000/";
+const API_BASE = (import.meta as any).env?.VITE_API_BASE ?? "http://127.0.0.1:5000/";
 
 async function j<T>(u: string, init?: RequestInit) {
   const r = await fetch(u, { headers: { Accept: "application/json" }, ...init });

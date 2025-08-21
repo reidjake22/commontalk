@@ -149,6 +149,7 @@ export default function TopicPage() {
       try {
         setLoadingRoot(true);
         setError(null);
+        console.log(topicId)
         const d = await getTopicDetail(String(topicId), ctrl.signal);
         setRootData(d);
         setLoadedSubs({});
