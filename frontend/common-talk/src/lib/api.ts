@@ -29,7 +29,7 @@ export function getFeaturedTopics(signal?: AbortSignal) {
 }
 
 export async function startFeaturedTopicsJob(signal?: AbortSignal) {
-  const res = await fetch(`/api/v1/polling/featured`, {
+  const res = await fetch(`${API_BASE}/api/v1/polling/featured`, {
     method: "GET",
     signal,
     cache: "no-store",
@@ -49,7 +49,7 @@ export async function pollJob(jobId: string, signal?: AbortSignal): Promise<{
 }
 
 export async function getFeaturedTopicsByJob(jobId: string, signal?: AbortSignal): Promise<any> {
-  const res = await fetch(`/api/v1/topics/featured/${jobId}`, { signal, cache: "no-store" });
+  const res = await fetch(`${API_BASE}/api/v1/topics/featured/${jobId}`, { signal, cache: "no-store" });
   if (!res.ok) throw new Error(`Fetching topics failed: ${res.status}`);
   return res.json(); // expect FeaturedTopicsOut shape
 }
