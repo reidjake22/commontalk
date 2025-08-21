@@ -1,7 +1,7 @@
 // src/hooks/useFeaturedTopics.ts
 import { useEffect, useRef, useState } from "react";
 import type { FeaturedTopicOut } from "../lib/types";
-import { startFeaturedTopicsJob, pollJob, getFeaturedTopicsByJob } from "../lib/api";
+import { pollFeaturedJob, getFeaturedTopicsByJob } from "../lib/api";
 
 type State = {
   topics: FeaturedTopicOut[];
@@ -14,87 +14,63 @@ const SESSION_KEY = "featured_job_id";
 export function useFeaturedTopics() {
   const [state, setState] = useState<State>({ topics: [], loading: true, error: null });
   const abortRef = useRef<AbortController | null>(null);
-  const runningRef = useRef(false);
-  const unmountedRef = useRef(false);
 
   useEffect(() => {
     abortRef.current?.abort();
     const ctrl = new AbortController();
     abortRef.current = ctrl;
-    runningRef.current = false;
-    unmountedRef.current = false;
 
     (async () => {
       try {
         setState(s => ({ ...s, loading: true, error: null }));
 
-        // Reuse an in-flight job if present
-        let jobId = sessionStorage.getItem(SESSION_KEY) ?? null;
-        if (!jobId) {
-          const { job_id } = await startFeaturedTopicsJob(ctrl.signal);
-          jobId = job_id;
-          sessionStorage.setItem(SESSION_KEY, jobId);
-        }
+        // Try to continue an existing job if we have one
+        let jobId = sessionStorage.getItem(SESSION_KEY) ?? undefined;
 
-        // Poll with exponential backoff up to a cap (e.g., 5s)
-        runningRef.current = true;
+        // Poll with exponential backoff up to a cap (e.g., 2s)
         let delay = 800; // ms
         const maxDelay = 2000; // ms
 
-        while (runningRef.current && !unmountedRef.current) {
-          // Pause polling when tab is hidden to avoid waste
+        while (true) {
           if (document.hidden) {
-            await sleep(1500);
+            await sleep(1200);
             continue;
           }
-          console.log("about to poll", jobId);
-          const statusResp = await pollJob(jobId!, ctrl.signal);
-          console.log(statusResp);
-          if (statusResp.status === "complete") {
-            console.log("something should be happening now")
-            const data = await getFeaturedTopicsByJob(jobId!, ctrl.signal);
-            // Expect { topics: FeaturedTopicOut[] } or { sub_topics: ... } — normalise
-            const topics = Array.isArray(data?.topics)
-              ? (data.topics as FeaturedTopicOut[])
+
+          const { job_id, status, error } = await pollFeaturedJob(jobId, ctrl.signal);
+          if (!jobId && job_id) {
+            jobId = job_id;
+            sessionStorage.setItem(SESSION_KEY, jobId);
+          }
+
+          if (status === "complete" && jobId) {
+            const data = await getFeaturedTopicsByJob(jobId, ctrl.signal);
+            const topics: FeaturedTopicOut[] = Array.isArray(data?.topics)
+              ? data.topics
               : Array.isArray(data?.sub_topics)
-                ? (data.sub_topics as FeaturedTopicOut[])
-                : [];
+              ? data.sub_topics
+              : [];
             setState({ topics, loading: false, error: null });
-            runningRef.current = false;
             break;
           }
 
-          if (statusResp.status === "error") {
-            setState({ topics: [], loading: false, error: statusResp.error ?? "Unknown job error" });
-            runningRef.current = false;
+          if (status === "error") {
+            setState({ topics: [], loading: false, error: error ?? "Job failed" });
             break;
           }
 
-          // queued | running
+          // queued | running | starting (etc.)
           await sleep(delay);
           delay = Math.min(maxDelay, Math.round(delay * 1.6));
         }
       } catch (e: any) {
-        console.log(e?.name, e?.message);
         if (e?.name !== "AbortError") {
-          console.log(e?.message ? e.message : "Failed to fetch topics");
           setState({ topics: [], loading: false, error: e?.message ?? "Failed to fetch topics" });
         }
-      } finally {
-        // If we stopped due to unmount/abort, keep loading=false only if we actually have data
-        setState(s => ({ ...s, loading: false }));
       }
     })();
 
-    const onVis = () => {
-      // No-op; loop checks document.hidden itself
-    };
-    document.addEventListener("visibilitychange", onVis);
-
     return () => {
-      unmountedRef.current = true;
-      runningRef.current = false;
-      document.removeEventListener("visibilitychange", onVis);
       ctrl.abort();
     };
   }, []);
@@ -104,9 +80,8 @@ export function useFeaturedTopics() {
     loading: state.loading,
     error: state.error,
     refetch: () => {
-      // Optional: clear session + restart the effect by forcing a remount in caller, or
-      // implement an internal restart: clear key, then repeat the logic above.
       sessionStorage.removeItem(SESSION_KEY);
+      // simplest: reload the page to restart the effect cleanly
       window.location.reload();
     },
   };
