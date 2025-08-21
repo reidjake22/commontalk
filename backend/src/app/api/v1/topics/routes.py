@@ -7,8 +7,8 @@ from app.services.topics.paging import get_cluster_points
 
 bp = Blueprint("topics", __name__)
 
-@bp.get("/<topic_id>")
-def single_topic(topic_id: str):
+@bp.get("/<int:topic_id>")
+def single_topic(topic_id: int):
     service_result = get_single(topic_id)  # Returns SingleTopicOut from service
     api_obj = SingleTopicOut.model_validate(service_result.model_dump())
     return api_obj.model_dump(), 200
