@@ -15,8 +15,11 @@ def single_topic(topic_id: str):
 
 @bp.get("/featured/<job_id>")
 def featured(job_id: str):
+    print("here")
     service_result = get_featured_topics_by_job_id(job_id)  # Returns FeaturedTopicOut
-    api_obj = FeaturedTopicsOut.model_validate({"topics": [service_result.model_dump()]})
+    print("got this far")
+    api_obj = FeaturedTopicsOut.model_validate({"topics": [topic.model_dump() for topic in service_result]})
+    print("even further")
     return api_obj.model_dump(), 200
 
 

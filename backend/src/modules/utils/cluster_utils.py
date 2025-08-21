@@ -405,7 +405,7 @@ def get_root_cluster_by_job_id(conn, job_id: int) -> Optional[int]:
     try:
         cursor.execute("""
             SELECT cluster_id
-            FROM cluster
+            FROM clusters
             WHERE layer = 0
             AND job_id = %s
         """, [job_id])
