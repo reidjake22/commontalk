@@ -43,6 +43,7 @@ def run(target_date="2025-07-16") -> JobNotification:
         return JobNotification(job_id=job_id, status=job_status)
 
     except Exception as e:
+        print(e)
         error_obj = ErrorSchema(message=str(e))
         print(f"Error during featured topics run: {e}")
         return error_obj

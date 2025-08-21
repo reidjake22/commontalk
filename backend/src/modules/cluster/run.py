@@ -92,7 +92,7 @@ def main():
 
     result = run_clustering(config, filters)
     if result:
-        print(f"Clustering completed successfully")
+        print(f"Clustering complete successfully")
         print(f"Root cluster ID: {result.get('cluster_id')}")
         import json
         print(json.dumps(result, indent=2, ensure_ascii=False))

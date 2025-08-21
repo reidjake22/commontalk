@@ -386,7 +386,7 @@ def get_job_status(job_id):
             cur.execute("SELECT status, error, FROM cluster_jobs WHERE job_id=%s", [job_id])
             row = cur.fetchone()
             cur.close()
-            if row[0] == "completed":
+            if row[0] == "complete":
                 root_cluster_id = get_root_cluster_by_job_id(conn, job_id)
             if row:
                 
@@ -461,13 +461,13 @@ def get_job_status_by_setup(conn, config: Dict, filters: Dict) -> Dict:
     """
     cursor = conn.cursor()
     try:
+        params = {"config": config, "filters": filters}
         cursor.execute("""
             SELECT job_id, status
             FROM cluster_jobs
             WHERE params::jsonb @> %s::jsonb
-            AND params::jsonb @> %s::jsonb
-        """, [json.dumps(config), json.dumps(filters)])
-        
+        """, [json.dumps(params)])
+
         row = cursor.fetchone()
         if row:
             return {
