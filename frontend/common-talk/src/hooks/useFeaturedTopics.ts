@@ -51,6 +51,7 @@ export function useFeaturedTopics() {
           const statusResp = await pollJob(jobId!, ctrl.signal);
 
           if (statusResp.status === "complete") {
+            console.log("something should be happening now")
             const data = await getFeaturedTopicsByJob(jobId!, ctrl.signal);
             // Expect { topics: FeaturedTopicOut[] } or { sub_topics: ... } — normalise
             const topics = Array.isArray(data?.topics)
@@ -75,6 +76,7 @@ export function useFeaturedTopics() {
         }
       } catch (e: any) {
         if (e?.name !== "AbortError") {
+          console.log(e?.message ? e.message : "Failed to fetch topics");
           setState({ topics: [], loading: false, error: e?.message ?? "Failed to fetch topics" });
         }
       } finally {
