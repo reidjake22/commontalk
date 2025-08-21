@@ -19,5 +19,5 @@ def search():
         error_obj = ErrorSchema(message=str(e))
         return error_obj.model_dump(), 400
     print("Search job submitted with ID:", search_submit_result)
-    print("Returning job notification:", JobNotification(job_id=search_submit_result).model_dump())
-    return jsonify(JobNotification(job_id=search_submit_result).model_dump()), 200
+    print("Returning job notification:", JobNotification(job_id=search_submit_result, status="queued").model_dump())
+    return jsonify(JobNotification(job_id=search_submit_result, status="queued").model_dump()), 200

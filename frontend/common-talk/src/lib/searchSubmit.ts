@@ -13,6 +13,7 @@ export function rangeToDates(range: Filters["range"]) {
 }
 
 async function postSearch(apiBase: string, body: SearchTerms) {
+  console.log("search url", apiBase,"/api/v1/search/" );
   const res = await fetch(`${apiBase}/api/v1/search/`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -43,6 +44,7 @@ export function makeSearchSubmit(navigate: (path: string) => void,apiBase: strin
     const json = await postSearch(apiBase, payload);
     console.log("Search job response:", json);
     const jobId = json.job_id;
+    console.log(jobId)
     if (!jobId) throw new Error("No job_id in response");
 
     // Full redirect to Flask polling route

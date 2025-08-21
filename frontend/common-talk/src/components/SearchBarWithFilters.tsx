@@ -84,6 +84,7 @@ export default function SearchBarWithFilters({
           <option value="24h">Last 24h</option>
           <option value="7d">Last 7 days</option>
           <option value="30d">Last 30 days</option>
+          <option value="inf">All time</option>
         </select>
 
         <button type="submit" className="h-9 px-4 rounded-md border border-transparent text-sm font-medium motion-safe:transition-colors hover:border-[var(--brand-1)]">
