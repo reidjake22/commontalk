@@ -48,7 +48,7 @@ def build_local_fp16_store(conn, filters: Dict, dims: int, job_id: int, prefer_d
 
     ids = np.memmap(ids_path, dtype=np.int64, mode="w+", shape=(N,))
     Xf16 = np.memmap(fp16_path, dtype=np.float16, mode="w+", shape=(N, dims))
-    BATCH = 8192
+    BATCH = 30
 
     with conn.cursor(name="points_stream") as cur:
         cur.itersize = BATCH
