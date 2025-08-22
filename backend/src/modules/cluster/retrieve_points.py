@@ -51,7 +51,7 @@ def get_points(conn, filters: Dict, dims: int = 64) -> List[Dict]:
 
 
 def get_top_points_by_embedding(conn, filters: Dict, search_term: str,
-                                limit: int = 1000, dims: int = 256) -> List[Dict]:
+                                limit: int = 50, dims: int = 256) -> List[Dict]:
     """
     Ranks by distance using truncated vectors on BOTH sides:
       ((p.point_embedding::real[])[1:d]::vector(d)) <-> vector(q[:d])
