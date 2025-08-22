@@ -59,3 +59,19 @@ def title_cluster(cluster_points: List) -> str:
     except Exception as e:
         print(f"Error generating cluster title: {e}")
         return f"Cluster {len(cluster_points)} points"
+
+from typing import List, Sequence
+
+def fetch_text_samples(conn, ids: Sequence[int], sample_size: int = 20) -> List[str]:
+    if not ids:
+        return []
+    # Take a small head sample to minimize IN() size
+    sample_ids = ids[:sample_size]
+    with conn.cursor() as cur:
+        cur.execute("""
+            SELECT p.point_value
+            FROM point p
+            WHERE p.point_id = ANY(%s)
+            LIMIT %s
+        """, (list(sample_ids), sample_size))
+        return [row[0] for row in cur.fetchall()]

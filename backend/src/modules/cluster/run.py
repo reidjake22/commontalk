@@ -1,108 +1,61 @@
 # Imports
 import logging
-import argparse
-import sys
-from typing import Optional, Dict
-from datetime import datetime
+
+from app import config
+import numpy as np
 
 # Relative Imports
-from .recursion import cluster_recursive
+from .recursion import cluster_recursive_idx
 from ..utils.database_utils import get_db_connection
 from ..utils.cluster_utils import finalise_job
-from .config import default_config
-from .retrieve_points import get_points, get_top_points_by_embedding
-
-#### MAIN FUNCTION ######
-def run_clustering(config, filters: Optional[Dict] = None) -> Dict:
-    print(config)
+# in modules/cluster/run.py
+from .store import build_local_fp16_store, cleanup_store
+# modules/cluster/run.py
+def run_clustering(config, filters=None):
     conn = get_db_connection()
     filters = filters or {}
-    print(f"Running clustering with filters: {filters}")
     if filters.get("member"):
         filters["member_ids"] = [filters["member"]]
-    if config.get("search") and filters.get("query"):
-        points = get_top_points_by_embedding(conn, filters, filters['query'] )
-    else:
-        points = get_points(conn, filters)
-    if not points:
-        logging.warning("No points found for clustering.")
-        return {}
-    current_depth = 0
-    clusters = cluster_recursive(conn, points, config, filters, current_depth)
-    conn.close()
-    finalise_job(config['job_id'])
-    print("Clustering job finalised")
-    clean_clusters = strip_embeddings(clusters)
-    print("returning clean clusters")
-    return clean_clusters
 
-def strip_embeddings(data):
-    """Recursively remove 'embedding' keys from nested data structures"""
-    if isinstance(data, dict):
-        result = {}
-        for key, value in data.items():
-            if key == 'embedding':
-                continue  # Skip embedding keys entirely
-            else:
-                result[key] = strip_embeddings(value)
-        return result
-    elif isinstance(data, list):
-        return [strip_embeddings(item) for item in data]
-    else:
-        return data
+    dims = config.get("dims", 256)
+    ids_path, fp16_path, N, D = build_local_fp16_store(conn, filters, dims=dims, job_id=int(config["job_id"]), prefer_db_fp16=True)
+    if N == 0:
+        logging.warning("No points found.")
+        conn.close()
+        return
+
+    config["scratch"] = {"ids_path": ids_path, "fp16_path": fp16_path, "dims": D, "N": N}
+    root_idx = np.arange(N, dtype=np.int64)
+    cluster_recursive_idx(conn, root_idx, config, filters, depth=0)
+
+    conn.close()
+    if config.get('job_id') != "1000000":
+        finalise_job(config['job_id'])
+    cleanup_store(int(config["job_id"]), dims=D)
 
 
 def main():
-    print("starting")
-    parser = argparse.ArgumentParser(description='Run clustering analysis with date range')
-    parser.add_argument('--start-date', required=True, help='Start date (YYYY-MM-DD)')
-    parser.add_argument('--end-date', required=True, help='End date (YYYY-MM-DD)')
-    parser.add_argument('--house', help='Parliamentary house (Commons/Lords)')
-    parser.add_argument('--max-depth', type=int, default=2, help='Maximum clustering depth')
-    
-    args = parser.parse_args()
-
-     # Validate date format
-    try:
-        datetime.strptime(args.start_date, '%Y-%m-%d')
-        datetime.strptime(args.end_date, '%Y-%m-%d')
-    except ValueError:
-        print("Error: Dates must be in YYYY-MM-DD format")
-        sys.exit(1)
-    
-    # Setup logging
-    logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-    
-    config = default_config.copy()
-    # Build filters
-    filters = {
-        'start_date': args.start_date,
-        'end_date': args.end_date
+    from modules.utils.cluster_utils import create_job
+    config = {
+        "method": "kmeans",
+        "search": False,
+        "skip_llm": True,
+        "max_depth": 2,
+        "min_points": 3,
+        "n_clusters": 3,
+        "n_clusters_base": 5,
+        "dims": 64
     }
-    print(f"Running clustering from {args.start_date} to {args.end_date}")
-
-    if args.house:
-        filters['house'] = args.house
-        print(f"filtering for house {filters['house']}")
-    if args.max_depth:
-        config['max_depth'] = args.max_depth
-        print(f"using max_depth {config['max_depth']}")
-    conn = get_db_connection()
-
-
-    result = run_clustering(config, filters)
-    if result:
-        print(f"Clustering complete successfully")
-        print(f"Root cluster ID: {result.get('cluster_id')}")
-        import json
-        print(json.dumps(result, indent=2, ensure_ascii=False))
-
-        response = input("do you want to enter a shell? Y/N: ").upper()
-        if response == 'Y':
-            import IPython; IPython.embed()
-    else:
-        print("No clusters created")
-
+    filters = {
+        "end_date": "2025-07-16",
+        "start_date": "2025-05-17"
+    }
+    params = {"config": config, "filters": filters}
+    print("creating job")
+    job_id = create_job(params)
+    print(f"job_id: {job_id}")
+    config["job_id"] = job_id
+    run_clustering(config, filters)
 
 if __name__ == "__main__":
     main()

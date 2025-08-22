@@ -1,43 +1,24 @@
-from typing import List, Dict
+# modules/cluster/save_ids.py
+from typing import Dict, List
+from psycopg2.extras import execute_values
 import json
 
-def save_cluster(conn, cluster: Dict) -> int:
-    """Saves a cluster to the database and returns its ID."""
-    cursor = conn.cursor()
-    
-    try:
-        # Insert cluster record - ADD config column, REMOVE method column
-        cursor.execute("""
-            INSERT INTO clusters (parent_cluster_id, title, summary, layer, created_at, filters_used, config, job_id, visible)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, FALSE)
-            RETURNING cluster_id;
-        """, (
-            cluster.get("parent_cluster_id"),
-            cluster.get("title"),
-            cluster.get("summary"),
-            cluster["layer"],
-            cluster["timestamp"],
-            json.dumps(cluster.get("filters_used", {})),
-            json.dumps(cluster.get("config", {})),
-            cluster['config']['job_id']
-        ))
-        
-        cluster_id = cursor.fetchone()[0]
-        
-        # Save cluster-point relationships (unchanged)
-        if cluster.get("points"):
-            for point in cluster["points"]:
-                point_id = point["id"]
-                cursor.execute("""
-                    INSERT INTO cluster_points (cluster_id, point_id)
-                    VALUES (%s, %s)
-                """, (cluster_id, point_id))
-        
-        return cluster_id
-        
-    except Exception as e:
-        conn.rollback()
-        raise e
-    finally:
-        conn.commit()
-        cursor.close()
+def save_cluster_ids(conn, *, parent_cluster_id, layer, filters_used, config, job_id, title=None, summary=None, point_ids: List[int] = None) -> int:
+    with conn.cursor() as cur:
+        cur.execute("""
+            INSERT INTO clusters (parent_cluster_id, title, summary, layer, filters_used, config, job_id, visible)
+            VALUES (%s, %s, %s, %s, %s::jsonb, %s::jsonb, %s, FALSE)
+            RETURNING cluster_id
+        """, (parent_cluster_id, title, summary, layer,
+              json.dumps(filters_used or {}), json.dumps(config or {}), job_id))
+        cluster_id = cur.fetchone()[0]
+
+        if point_ids:
+            rows = [(cluster_id, pid) for pid in point_ids]
+            execute_values(cur, """
+                INSERT INTO cluster_points (cluster_id, point_id)
+                VALUES %s
+                ON CONFLICT (cluster_id, point_id) DO NOTHING
+            """, rows, template="(%s,%s)")
+    conn.commit()
+    return cluster_id
