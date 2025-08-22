@@ -11,7 +11,7 @@ def get_featured_topics_by_job_id(job_id)-> FeaturedTopic:
         root_cluster_id = get_root_cluster_by_job_id(conn, job_id)
         print(f"ROOT CLUSTER ID: {root_cluster_id}")
         # Fetch the featured topic using the root_cluster_id
-        root_cluster = get_cluster_by_id(conn,root_cluster_id, include_points=True, include_metadata=True)
+        root_cluster = get_cluster_by_id(conn,root_cluster_id, include_points=False, include_metadata=False)
         print(type(root_cluster))
         featured_topics = map_cluster_to_featured_topics(root_cluster)
         
