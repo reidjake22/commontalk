@@ -383,21 +383,25 @@ def get_job_status(job_id):
     conn = get_db_connection()
     try:
         with conn.cursor() as cur:
-            cur.execute("SELECT status, error, FROM cluster_jobs WHERE job_id=%s", [job_id])
+            cur.execute("SELECT status FROM cluster_jobs WHERE job_id=%s", [job_id])
             row = cur.fetchone()
             cur.close()
             if row[0] == "complete":
                 root_cluster_id = get_root_cluster_by_job_id(conn, job_id)
-            if row:
-                
                 return {
                     "job_id": job_id,
                     "status": row[0],
-                    "error": row[1],
+                    "root_cluster_id": root_cluster_id
                 }
-            
-    except:
-        raise Exception
+            if row:
+                return {
+                    "job_id": job_id,
+                    "status": row[0],
+                }
+
+    except Exception as e:
+        print(f"Error getting job status for job {job_id}: {e}")
+        raise Exception("Failed to retrieve job status")
 
 def get_root_cluster_by_job_id(conn, job_id: int) -> Optional[int]:
     """Retrieve the root cluster ID for a given job ID."""

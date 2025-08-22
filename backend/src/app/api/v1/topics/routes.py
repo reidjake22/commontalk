@@ -4,7 +4,6 @@ from .schemas import SingleTopicOut, FeaturedTopicsOut, ErrorSchema
 from app.services.topics.single_topic import run as get_single
 from app.services.topics.featured_topic import get_featured_topics_by_job_id
 from app.services.topics.paging import get_cluster_points
-import logging
 
 bp = Blueprint("topics", __name__)
 
@@ -19,9 +18,10 @@ def featured(job_id: str):
     print("here")
     service_result = get_featured_topics_by_job_id(job_id)  # Returns FeaturedTopicOut
     print("got this far")
-    api_obj = {"topics": [topic.model_dump() for topic in service_result]}
-    print("FINAL BOSS")
-    return api_obj, 200
+    
+    api_obj = FeaturedTopicsOut.model_validate({"topics": [topic.model_dump() for topic in service_result]})
+    print("even further")
+    return api_obj.model_dump(), 200
 
 
 @bp.get("/<int:topic_id>/points")
