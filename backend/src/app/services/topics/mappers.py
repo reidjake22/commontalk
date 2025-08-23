@@ -4,7 +4,7 @@ from sklearn import logger
 from .models import FeaturedTopic, LightMember, LightParty, SingleTopic, RichPoint, LightPartyProportion, PagedRichPoints
 from modules.models.cluster import ClusterData, PartyProportion
 from modules.models.database import Point, Contribution, Member, Debate
-from modules.models.pagination import PagedResponse, PageMeta
+from modules.models.pagination import PagedResponse, PageMeta, 
 def map_cluster_to_featured_topics(cluster: ClusterData) -> List[FeaturedTopic]:
     """
     Maps a cluster's sub-clusters to a list of featured topics.
@@ -83,7 +83,7 @@ def map_cluster_to_single_topic(cluster: ClusterData) -> SingleTopic:
         sub_topics=sub_topics
     )
 
-def map_points_to_rich_points(points: PagedResponse[Point]) -> PagedResponse[RichPoint]:
+def map_points_to_rich_points(points: PagedResponse[Point]) -> PagedRichPoints:
     """
     Maps Point objects to RichPoint objects with related data.
     """
@@ -96,7 +96,7 @@ def map_points_to_rich_points(points: PagedResponse[Point]) -> PagedResponse[Ric
         point_ids = [point.point_id for point in points.data]
 
         if not point_ids:
-            return PagedResponse[RichPoint](data=[], meta=PageMeta())
+            return PagedRichPoints(data=[], meta=PageMeta())
 
         # Build query with IN clause for multiple points
         placeholders = ','.join(['%s'] * len(point_ids))

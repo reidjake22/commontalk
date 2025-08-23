@@ -140,7 +140,6 @@ def build_cluster_tree(conn, cluster_id: int, include_points: bool = False, incl
             if sub_cluster:
                 sub_clusters.append(sub_cluster)
         debates = get_debates(cluster_id)
-        print(debates)
         if include_points:
             next_cursor = str(points[-1].point_id) if len(points) == page_size else None
             paged_points = PagedPoints(data=points, meta=PageMeta(next_cursor=next_cursor))
