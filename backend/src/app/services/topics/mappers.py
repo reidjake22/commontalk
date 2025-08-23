@@ -182,6 +182,7 @@ def map_points_to_rich_points(points: PagedResponse[Point]) -> PagedResponse[Ric
                 prev_cursor=rich_points[-1].point.point_id if rich_points else None,
                 total_count=len(rich_points)
             ))
+        print(type(paged_rich_points))
         return paged_rich_points
 
     except Exception as e:

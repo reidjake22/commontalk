@@ -10,7 +10,7 @@ class PageMeta(BaseModel):
     prev_cursor: Optional[int] = None
     total_count: Optional[int] = None
 
-class PagedResponse(Generic[T], BaseModel):
+class PagedResponse(BaseModel, Generic[T]):
     data: List[T]
     meta: PageMeta
 

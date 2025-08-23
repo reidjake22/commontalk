@@ -71,7 +71,7 @@ class PageMetaOut(BaseModel):
     prev_cursor: Optional[int] = None
     total_count: Optional[int] = None
 
-class PagedResponseOut(Generic[T], BaseModel):
+class PagedResponseOut(BaseModel, Generic[T]):
     data: List[T]
     meta: PageMetaOut
 
