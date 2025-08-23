@@ -22,11 +22,9 @@ def paths_for_job(job_id: int) -> Tuple[str, str]:
 
 
 def _empty_store(job_id: int) -> Tuple[str, str, int, int]:
-    """Create empty store files and return shapes as zeros."""
+    """Create empty store files and return shapes as zeros (raw empty .dat files)."""
     ids_path, fp16_path = paths_for_job(job_id)
-    # Keep ids file as .npy for quick loading of int64 ids
-    np.save(ids_path, np.empty(0, dtype=np.int64))
-    # Create empty fp16 file
+    open(ids_path, "wb").close()
     open(fp16_path, "wb").close()
     return ids_path, fp16_path, 0, 0
 
@@ -92,7 +90,7 @@ def count_points(conn, filters: Dict) -> int:
 
 
 # =========================
-# Builders
+# Builders (streaming)
 # =========================
 
 def build_local_fp16_store(
@@ -106,6 +104,7 @@ def build_local_fp16_store(
       Xfp16_.dat : float16 memmap shape (N, inferred_dims)
 
     Uses p.emb256_f16 (fp16 bytea) only. No dims argument, no client truncation.
+    Pre-sizes exactly via COUNT, then streams via server-side cursor.
     """
     # Infer dims from a sample row (fp16 -> 2 bytes per dim)
     with conn.cursor() as cur0:
@@ -123,7 +122,7 @@ def build_local_fp16_store(
         return _empty_store(job_id)
     dims = row[0] // 2
 
-    # Size memmaps
+    # Size memmaps exactly
     N = count_points(conn, filters)
     if N == 0:
         return _empty_store(job_id)
@@ -132,7 +131,6 @@ def build_local_fp16_store(
     ids_mm = np.memmap(ids_path, dtype=np.int64, mode="w+", shape=(N,))
     Xf16_mm = np.memmap(fp16_path, dtype=np.float16, mode="w+", shape=(N, dims))
 
-    # Stream & write
     BATCH = 100
     with conn.cursor(name="points_stream") as cur:
         where_sql, params = _where_for_filters(filters)
@@ -172,7 +170,14 @@ def build_local_fp16_store_search(
 ) -> Tuple[str, str, int, int]:
     """
     Rank by full pgvector (p.point_embedding <-> q), limit to `search_limit`,
-    write truncated fp16 bytes from p.emb256_f16. No dims argument; infer once.
+    write truncated fp16 bytes from p.emb256_f16.
+
+    Streaming plan:
+      - Use a server-side cursor with ORDER BY ... LIMIT K
+      - Fetch the first row to infer dims
+      - Pre-allocate memmaps for K rows (upper bound)
+      - Stream-insert batches
+      - Truncate files to K_eff at the end
     """
     query_text = (filters or {}).get("query")
     if not query_text or search_limit <= 0:
@@ -180,7 +185,6 @@ def build_local_fp16_store_search(
 
     qvec = list(map(float, embed(query_text)))
 
-    # Build ranked query (apply filters before ORDER BY)
     where_sql, params = _where_for_filters(filters)
     base = sql.SQL("""
         SELECT p.point_id, p.emb256_f16
@@ -195,24 +199,51 @@ def build_local_fp16_store_search(
     q = q + sql.SQL(" ORDER BY p.point_embedding <-> %s::vector ASC LIMIT %s")
     params = params + [qvec, search_limit]
 
-    with conn.cursor() as cur:
-        cur.execute(q, params)
-        rows = cur.fetchall()
-
-    if not rows:
-        return _empty_store(job_id)
-
-    # Infer dims from first row’s bytea
-    dims = len(rows[0][1]) // 2
-    K = len(rows)
-
     ids_path, fp16_path = paths_for_job(job_id)
-    ids_mm = np.memmap(ids_path, dtype=np.int64, mode="w+", shape=(K,))
-    Xf16_mm = np.memmap(fp16_path, dtype=np.float16, mode="w+", shape=(K, dims))
 
-    for i, (pid, f16_bytes) in enumerate(rows):
-        ids_mm[i] = int(pid)
-        Xf16_mm[i] = np.frombuffer(f16_bytes, dtype=np.float16, count=dims)
+    BATCH = min(100, max(10, search_limit))
+    with conn.cursor(name="search_stream") as cur:
+        cur.itersize = BATCH
+        cur.execute(q, params)
 
+        # First row: infer dims, allocate files
+        first = cur.fetchone()
+        if not first:
+            return _empty_store(job_id)
+        first_pid, first_bytes = first
+        dims = len(first_bytes) // 2
+
+        # Pre-allocate to the LIMIT upper bound, then shrink
+        ids_mm = np.memmap(ids_path, dtype=np.int64, mode="w+", shape=(search_limit,))
+        Xf16_mm = np.memmap(fp16_path, dtype=np.float16, mode="w+", shape=(search_limit, dims))
+
+        # Write the first row
+        i = 0
+        ids_mm[i] = int(first_pid)
+        Xf16_mm[i] = np.frombuffer(first_bytes, dtype=np.float16, count=dims)
+        i += 1
+
+        # Stream remaining rows in batches
+        for rows in iter(lambda: cur.fetchmany(BATCH), []):
+            if not rows:
+                break
+            m = len(rows)
+            for j in range(m):
+                pid, f16_bytes = rows[j]
+                ids_mm[i + j] = int(pid)
+                Xf16_mm[i + j] = np.frombuffer(f16_bytes, dtype=np.float16, count=dims)
+            i += m
+
+    # Flush and truncate to the effective size
     ids_mm.flush(); Xf16_mm.flush()
-    return ids_path, fp16_path, K, dims
+    del ids_mm; del Xf16_mm  # close memmaps before truncating
+
+    int64_size = np.dtype(np.int64).itemsize
+    f16_size = np.dtype(np.float16).itemsize
+
+    with open(ids_path, "r+b") as f:
+        f.truncate(i * int64_size)
+    with open(fp16_path, "r+b") as f:
+        f.truncate(i * dims * f16_size)
+
+    return ids_path, fp16_path, i, dims
