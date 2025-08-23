@@ -70,7 +70,6 @@ def map_cluster_to_single_topic(cluster: ClusterData) -> SingleTopic:
     contributors = map_contributors_to_light_members(cluster.contributors)
     proportions = map_proportions_to_light_parties(cluster.proportions)
     sub_topics = map_cluster_to_featured_topics(cluster)
-
     
     # Create SingleTopic object
     return SingleTopic(
@@ -88,9 +87,6 @@ def map_points_to_rich_points(points: PagedResponse[Point]) -> PagedResponse[Ric
     """
     Maps Point objects to RichPoint objects with related data.
     """
-    if not points:
-        return PagedResponse[RichPoint](data=[], meta=PageMeta())
-
     from modules.utils.database_utils import get_db_connection
     
     conn = get_db_connection()
@@ -182,7 +178,6 @@ def map_points_to_rich_points(points: PagedResponse[Point]) -> PagedResponse[Ric
                 prev_cursor=rich_points[-1].point.point_id if rich_points else None,
                 total_count=len(rich_points)
             ))
-        print(type(paged_rich_points))
         return paged_rich_points
 
     except Exception as e:
