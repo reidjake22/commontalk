@@ -27,7 +27,7 @@ export default function SearchPage() {
       inFlight = ctrl;
 
       try {
-        const res = await fetch(`http://127.0.0.1:5000/api/v1/polling/${jobId}`, {
+        const res = await fetch(`https://api.commontalk.co.uk/api/v1/polling/${jobId}`, {
           signal: ctrl.signal,
           cache: "no-store",
         });

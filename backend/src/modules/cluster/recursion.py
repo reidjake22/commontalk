@@ -29,7 +29,7 @@ def cluster_recursive_idx(conn, idx, config, filters, depth, parent_cluster_id=N
     cluster_id = save_cluster_ids(conn, parent_cluster_id=parent_cluster_id, layer=depth,
                                   filters_used=filters, config=config, job_id=config["job_id"],
                                   title=title, summary=summary,
-                                  point_ids=point_ids if (depth >= config["max_depth"] or len(idx) < config.get("min_points", 5)) else None)
+                                  point_ids=point_ids)
 
     if depth >= config["max_depth"] or len(idx) < config.get("min_points", 5):
         return
