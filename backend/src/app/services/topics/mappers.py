@@ -4,7 +4,7 @@ from sklearn import logger
 from .models import FeaturedTopic, LightMember, LightParty, SingleTopic, RichPoint, LightPartyProportion, PagedRichPoints
 from modules.models.cluster import ClusterData, PartyProportion
 from modules.models.database import Point, Contribution, Member, Debate
-from modules.models.pagination import PagedResponse, PageMeta, 
+from modules.models.pagination import PagedResponse, PageMeta
 def map_cluster_to_featured_topics(cluster: ClusterData) -> List[FeaturedTopic]:
     """
     Maps a cluster's sub-clusters to a list of featured topics.
