@@ -1,6 +1,7 @@
 from typing import Dict, List
 from groq import Groq
 import os
+import random
 
 def summarise_cluster(cluster_points: List, title: str) -> str:
     """Summarises a cluster of points based on their values and title using LLM"""
@@ -8,7 +9,7 @@ def summarise_cluster(cluster_points: List, title: str) -> str:
         return "Empty cluster"
     
     # Extract point values (assuming point[1] is the text content)
-    point_texts = [str(point["text"]) for point in cluster_points[:20]]  # Limit to 20 for API
+    point_texts = [str(point["text"]) for point in cluster_points[:30]]  # Limit to 30 for API
 
     model_input = f"""The following points are all part of the same category - {title}. 
     Using the additional context of the points themselves, please provide a 200-word summary 
@@ -32,15 +33,15 @@ def summarise_cluster(cluster_points: List, title: str) -> str:
         print(f"Error generating cluster summary: {e}")
         return f"Cluster about {title} with {len(cluster_points)} points"
 
-def title_cluster(cluster_points: List) -> str:
+def title_cluster(cluster_points: List, parent_title: str) -> str:
     """Labels a cluster of points based on their values using LLM"""
     if not cluster_points:
         return "Empty Cluster"
     
     # Extract point values (assuming point[1] is the text content)
-    point_texts = [str(point["text"]) for point in cluster_points[:15]]  # Limit to 5 for API
-    
-    model_input = f"""The following points are all part of the same category. 
+    point_texts = [str(point["text"]) for point in cluster_points[:30]]  # Limit to 30 for API
+
+    model_input = f"""The following points are all part of the same category. {'They are a subtopic of: ' + parent_title if parent_title else ''} 
     Identify what that category is: {' | '.join(point_texts)}. 
     Please only return a single phrase (2-4 words) that describes the category."""
 
@@ -65,8 +66,8 @@ from typing import List, Sequence
 def fetch_text_samples(conn, ids: Sequence[int], sample_size: int = 20) -> List[str]:
     if not ids:
         return []
-    # Take a small head sample to minimize IN() size
-    sample_ids = ids[:sample_size]
+    # Randomly sample IDs for better representation
+    sample_ids = random.sample(ids, min(sample_size, len(ids)))
     with conn.cursor() as cur:
         cur.execute("""
             SELECT p.point_value

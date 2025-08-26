@@ -20,10 +20,13 @@ def cluster_recursive_idx(conn, idx, config, filters, depth, parent_cluster_id=N
 
     title = summary = None
     if (depth > 0 or config.get("search")) and not config.get("skip_llm"):
-        texts = fetch_text_samples(conn, point_ids, sample_size=20)
+        texts = fetch_text_samples(conn, point_ids, sample_size=30)
         if texts:
             faux_points = [{"text": t} for t in texts]
-            title = title_cluster(faux_points)
+            if depth == 0:
+                title = filters.get("query", "")
+            else:
+                title = title_cluster(faux_points, filters.get("parent_title", ""))
             summary = summarise_cluster(faux_points, title)
 
     cluster_id = save_cluster_ids(conn, parent_cluster_id=parent_cluster_id, layer=depth,
