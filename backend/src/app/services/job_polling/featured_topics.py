@@ -1,14 +1,13 @@
 # backend/src/app/services/topics/featured_topics.py
+
+# Project imports
 from modules.utils.database_utils import get_db_connection
-from modules.utils.cluster_utils import get_cluster_by_id, get_cluster_by_setup, check_if_cluster_exists, create_job, get_job_status_by_setup
+from modules.utils.cluster_utils import create_job, get_job_status_by_setup
 from modules.utils.executor_utils import submit
 from modules.cluster.run import run_clustering
 from datetime import datetime, timedelta
-from ..topics.models import FeaturedTopic
 from ...common.models import JobNotification
-from ..topics.mappers import map_cluster_to_featured_topics
 from app.common.errors import ErrorSchema
-from typing import List, Dict, Union
 
 
 def run(target_date="2025-07-16") -> JobNotification:

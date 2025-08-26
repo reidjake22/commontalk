@@ -14,7 +14,7 @@ DEBATE_URL = BASE_URL + "debates/"
 SEARCH_URL = BASE_URL + "search/"
 MEMBERS_URL = "https://members-api.parliament.uk/api/"
 
-
+logger = logging.getLogger(__name__)
 
 def scrape_parties() -> List[Dict]:
     """ Scrapes party data. """
@@ -142,13 +142,13 @@ def scrape_party(party_id: str) -> Optional[Dict]:
                     "isIndependentParty": party_info.get('isIndependentParty', False)
                 }
             else:
-                logging.warning(f"No party info found for party ID {party_id}")
+                logger.warning(f"No party info found for party ID {party_id}")
                 return None
         else:
-            logging.warning(f"No members found for party {party_id}")
+            logger.warning(f"No members found for party {party_id}")
             return None
     else:
-        logging.error(f"Error fetching party data for {party_id}: {response.status_code}")
+        logger.error(f"Error fetching party data for {party_id}: {response.status_code}")
         return None
 
 def get_missing_parties(party_data: List[Dict], member_data: List[Dict]) -> List[Dict]:

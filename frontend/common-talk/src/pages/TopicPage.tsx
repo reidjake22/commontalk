@@ -396,13 +396,13 @@ export default function TopicPage() {
                   <svg width="14" height="14" viewBox="0 0 24 24" className="opacity-70" aria-hidden>
                     <path fill="currentColor" d="M12 12a5 5 0 1 0-5-5a5 5 0 0 0 5 5m0 2c-5.33 0-8 2.67-8 4v2h16v-2c0-1.33-2.67-4-8-4" />
                   </svg>
-                  {stats.contributorsCount} contributors
+                  {stats.contributorsCount} Speakers
                 </span>
                 <span className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white px-3 py-1 text-xs text-gray-700">
                   <svg width="14" height="14" viewBox="0 0 24 24" className="opacity-70" aria-hidden>
                     <path fill="currentColor" d="M3 5h18v2H3zm0 6h12v2H3zm0 6h18v2H3z" />
                   </svg>
-                  {stats.debatesCount} debates
+                  {stats.debatesCount} Debates
                 </span>
                 <button
                   type="button"
@@ -493,6 +493,9 @@ export default function TopicPage() {
                   Showing {visiblePoints.length}
                   {typeof activeTopic.points?.meta?.total_count === "number" ? ` of ${activeTopic.points.meta.total_count}` : ""}
                 </span>
+                  <div className="text-xs text-gray-400 mt-1">
+                  Points are chronological, not by relevance—interesting points may be further in.
+                  </div>
               </div>
 
               <TopicPointsPane

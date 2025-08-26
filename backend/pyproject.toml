@@ -16,7 +16,6 @@ dependencies = [
   "groq",
   "scikit-learn",
   "dotenv",
-  "gunicorn"
 ]
 
 [tool.setuptools]

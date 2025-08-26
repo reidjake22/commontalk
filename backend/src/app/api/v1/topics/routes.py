@@ -1,5 +1,9 @@
 # src/app/api/v1/topics/routes.py
+
+# Imports
 from flask import Blueprint, request, abort, jsonify
+
+# Project imports
 from .schemas import SingleTopicOut, FeaturedTopicsOut, ErrorSchema
 from app.services.topics.single_topic import run as get_single
 from app.services.topics.featured_topic import get_featured_topics_by_job_id
@@ -40,7 +44,6 @@ def topic_points(topic_id: int):
     if after_point_id and before_point_id:
         abort(400, description="Use either after_point_id or before_point_id, not both.")
 
-    # Call service (returns a Pydantic PagedResponse[RichPointOut])
     page = get_cluster_points(
         cluster_id=topic_id,
         limit=limit,
@@ -48,7 +51,6 @@ def topic_points(topic_id: int):
         before_point_id=before_point_id,
     )
 
-    # Ensure cursors are strings in JSON (aligns with your TS types)
     payload = page.model_dump()
     meta = payload.get("meta", {})
     for k in ("next_cursor", "previous_cursor"):

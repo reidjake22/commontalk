@@ -98,7 +98,7 @@ export function Header() {
                 Discover what matters in UK politics
               </h2>
               <p className="text-gray-600">
-                Search parliamentary debates, track trending topics, and follow the conversations shaping our democracy.
+                Experimental site to search parliamentary debates, track topics, and follow the conversations shaping our democracy.
               </p>
             </div>
 

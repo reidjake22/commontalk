@@ -11,6 +11,8 @@ from .store import (
     cleanup_store,
 )
 
+logger = logging.getLogger(__name__)
+
 def run_clustering(config, filters=None):
     conn = get_db_connection()
     filters = dict(filters or {})
@@ -39,7 +41,7 @@ def run_clustering(config, filters=None):
             )
 
         if N == 0:
-            logging.warning("No points found.")
+            logger.warning("No points found.")
             # Clean up any empty files we just created and bail
             cleanup_store(job_id)
             return
@@ -87,9 +89,7 @@ def main():
     }
 
     params = {"config": config, "filters": filters}
-    print("creating job")
     job_id = create_job(params)
-    print(f"job_id: {job_id}")
     config["job_id"] = job_id
     run_clustering(config, filters)
 

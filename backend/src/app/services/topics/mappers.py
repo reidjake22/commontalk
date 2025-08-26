@@ -1,10 +1,13 @@
 from typing import List
+import logging
 
-from sklearn import logger
 from .models import FeaturedTopic, LightMember, LightParty, SingleTopic, RichPoint, LightPartyProportion, PagedRichPoints
 from modules.models.cluster import ClusterData, PartyProportion
 from modules.models.database import Point, Contribution, Member, Debate
 from modules.models.pagination import PagedResponse, PageMeta
+from app.common.errors import ServiceUnavailable
+
+logger = logging.getLogger(__name__)
 def map_cluster_to_featured_topics(cluster: ClusterData) -> List[FeaturedTopic]:
     """
     Maps a cluster's sub-clusters to a list of featured topics.
@@ -91,10 +94,8 @@ def map_points_to_rich_points(points: PagedResponse[Point]) -> PagedRichPoints:
     
     conn = get_db_connection()
     cursor = conn.cursor()
-    
     try:
         point_ids = [point.point_id for point in points.data]
-
         if not point_ids:
             return PagedRichPoints(data=[], meta=PageMeta())
 
@@ -179,10 +180,9 @@ def map_points_to_rich_points(points: PagedResponse[Point]) -> PagedRichPoints:
                 total_count=len(rich_points)
             ))
         return paged_rich_points
-
     except Exception as e:
-        logger.error(f"Error creating rich points: {e}")
-        return []
+        logger.error(f"Error creating rich points: {e}", exc_info=True)
+        raise ServiceUnavailable("rich_points_error", "Could not map points to rich points.") from e
     finally:
         cursor.close()
         conn.close()

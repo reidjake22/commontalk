@@ -18,6 +18,7 @@ class ApiError(Exception):
 
 class NotFound(ApiError):           status_code = 404
 class ServiceUnavailable(ApiError): status_code = 503
+class ServerError(ApiError):        status_code = 500
 
 def register_error_handlers(app):
     @app.errorhandler(ApiError)

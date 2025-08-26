@@ -1,5 +1,7 @@
-from pydantic import BaseModel, Field
-from typing import Optional, List, Dict
+# backend/src/app/services/search/models.py
+from pydantic import BaseModel
+from typing import Optional
+
 class SearchTerms(BaseModel):
     member: Optional[str] = None
     party: Optional[int] = None

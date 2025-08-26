@@ -5,8 +5,7 @@ from .mappers import map_cluster_to_single_topic  # returns a dict/DTO suitable 
 from .models import SingleTopic
 
 import logging
-from typing import Dict
-from app.common.errors import NotFound, ServiceUnavailable
+from app.common.errors import ServiceUnavailable
 
 logger = logging.getLogger(__name__)
 

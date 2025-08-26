@@ -54,7 +54,7 @@ export default function SearchBarWithFilters({
           ref={inputRef}
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          placeholder="Search…"
+          placeholder="Try searching for a topic that interests you..."
           aria-label="Search"
           className="flex-1 h-11 bg-transparent outline-none text-base px-2 min-w-0"
         />
