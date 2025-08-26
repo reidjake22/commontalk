@@ -487,15 +487,19 @@ export default function TopicPage() {
         <div className="lg:col-span-1">
           <div className="rounded-2xl bg-gradient-to-br from-gray-100 to-white p-[1px]">
             <div className="rounded-2xl bg-white">
-              <div className="flex items-baseline justify-between px-5 pt-5">
-                <h2 className="text-xl font-semibold tracking-tight">Points</h2>
-                <span aria-live="polite" className="text-xs text-gray-500">
-                  Showing {visiblePoints.length}
-                  {typeof activeTopic.points?.meta?.total_count === "number" ? ` of ${activeTopic.points.meta.total_count}` : ""}
-                </span>
-                  <div className="text-xs text-gray-400 mt-1">
+              <div className="px-5 pt-5">
+                <div className="flex items-baseline justify-between">
+                  <h2 className="text-xl font-semibold tracking-tight">Points</h2>
+                  <span aria-live="polite" className="text-xs text-gray-500">
+                    Showing {visiblePoints.length}
+                    {typeof activeTopic.points?.meta?.total_count === "number"
+                      ? ` of ${activeTopic.points.meta.total_count}`
+                      : ""}
+                  </span>
+                </div>
+                <div className="text-xs text-gray-400 mt-2">
                   Points are chronological, not by relevance—interesting points may be further in.
-                  </div>
+                </div>
               </div>
 
               <TopicPointsPane
