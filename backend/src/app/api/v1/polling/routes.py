@@ -27,8 +27,11 @@ def poll(job_id: str):
         return PollOut(
             job_id=job_id,
             status=poll_result['status'],
-            root_cluster_id=poll_result['root_cluster_id'] if poll_result['root_cluster_id'] else None
+            root_cluster_id=poll_result.get('root_cluster_id') if poll_result.get('root_cluster_id') else None
         ).model_dump(), 200
     except ValidationError as e:
         logger.error(f"Schema validation error polling job {job_id}: {e}")
         raise ServerError("schema_validation_error", "Invalid response schema for polling job", str(e))
+    except Exception as e:
+        logger.error(f"Unexpected error polling job {job_id}: {e}")
+        raise ServerError("polling_error", f"Error polling job {job_id}", str(e))

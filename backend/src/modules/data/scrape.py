@@ -80,7 +80,7 @@ def scrape_debates_and_contributions(start_date:str, end_date: str) -> tuple[Lis
     contributions_data = []
 
     for i, debate_ext_id in enumerate(remaining_debate_ids):
-        if i % 50 == 0: print(f"Processing debate {i + 1}/{len(debate_ids)}: {debate_ext_id}")
+        if i % 50 == 0: print(f"Processing debate {i + 1}/{len(remaining_debate_ids)}: {debate_ext_id}")
         debate_data = scrape_debate_data(debate_ext_id)
 
         if debate_data:

@@ -1,6 +1,10 @@
 import re
 from typing import Dict, List
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 def clean_llm_response(response: str) -> str:
     """
     Cleans LLM response by removing HTML artifacts and extracting JSON array.
@@ -28,16 +32,16 @@ def clean_llm_response(response: str) -> str:
 def check_contribution(contribution)-> bool:
     """ Checks if the contribution is something we want for the LLM to analyse or just a time stamp or something weird - good for formatting, useless for LLM"""
     if contribution['member_id'] is None:
-        print(f"Skipping contribution {contribution['item_id']} - no member ID")
+        logger.debug(f"Skipping contribution {contribution['item_id']} - no member_id")
         return False
     if contribution['contribution_value'] is None or contribution['contribution_value'].strip() == "":
-        print(f"Skipping contribution {contribution['item_id']} - no contribution value")
+        logger.debug(f"Skipping contribution {contribution['item_id']} - no contribution value")
         return False
     if contribution['attributed_to'] is None or contribution['attributed_to'].strip() == "":
-        print(f"Skipping contribution {contribution['item_id']} - no attribution")
+        logger.debug(f"Skipping contribution {contribution['item_id']} - no attribution")
         return False
     if contribution['contribution_type'] not in ["Contribution", "Intervention", "Question"]:
-        print(f"Skipping contribution {contribution['item_id']} - not a valid contribution type: {contribution['contribution_type']}")
+        logger.debug(f"Skipping contribution {contribution['item_id']} - not a valid contribution type: {contribution['contribution_type']}")
         return False
     return True
 

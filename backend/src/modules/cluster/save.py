@@ -2,15 +2,16 @@
 from typing import Dict, List
 from psycopg2.extras import execute_values
 import json
-
+from modules.points.embed import embed
 def save_cluster_ids(conn, *, parent_cluster_id, layer, filters_used, config, job_id, title=None, summary=None, point_ids: List[int] = None) -> int:
+    title_embedding = embed(title) if title else None
     with conn.cursor() as cur:
         cur.execute("""
-            INSERT INTO clusters (parent_cluster_id, title, summary, layer, filters_used, config, job_id, visible)
-            VALUES (%s, %s, %s, %s, %s::jsonb, %s::jsonb, %s, FALSE)
+            INSERT INTO clusters (parent_cluster_id, title, summary, layer, filters_used, config, job_id, visible, title_embedding)
+            VALUES (%s, %s, %s, %s, %s::jsonb, %s::jsonb, %s, FALSE, %s)
             RETURNING cluster_id
         """, (parent_cluster_id, title, summary, layer,
-              json.dumps(filters_used or {}), json.dumps(config or {}), job_id))
+              json.dumps(filters_used or {}), json.dumps(config or {}), job_id, title_embedding))
         cluster_id = cur.fetchone()[0]
 
         if point_ids:

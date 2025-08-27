@@ -1,6 +1,6 @@
 import psycopg2
-
-def insert_point(conn: psycopg2.extensions.connection, contribution_item_id: str, point_value: str, point_embedding: list) -> None:
+from typing import List, Dict
+def insert_point(conn: psycopg2.extensions.connection, contribution_item_id: str, point_value: str, point_embedding: list[Dict]) -> None:
     """ Saves a point to the database. """
     cursor = conn.cursor()
     cursor.execute("""

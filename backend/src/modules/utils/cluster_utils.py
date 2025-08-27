@@ -85,7 +85,7 @@ def build_cluster_tree(conn, cluster_id: int, include_points: bool = False, incl
     try:
         # Get cluster details
         cursor.execute("""
-            SELECT cluster_id, parent_cluster_id, title, summary, layer, created_at, filters_used, config
+            SELECT cluster_id, parent_cluster_id, title, summary, layer, created_at, filters_used, config, title_embedding
             FROM clusters 
             WHERE cluster_id = %s;
         """, [cluster_id])
@@ -105,18 +105,37 @@ def build_cluster_tree(conn, cluster_id: int, include_points: bool = False, incl
             filters_used=cluster_row[6] or {},
             config=cluster_row[7] or {}
         )
-        
+        title_embedding = cluster_row[8]
         # Get points if requested
         points = None
         if include_points:
-            cursor.execute("""
-                SELECT p.point_id, p.contribution_item_id, p.point_value
-                FROM cluster_points cp
-                JOIN point p ON cp.point_id = p.point_id
-                WHERE cp.cluster_id = %s
-                ORDER BY p.point_id
-                limit %s;
-            """, [cluster_id, page_size])
+            if title_embedding is not None:
+                logger.info("start")
+                # Semantic order: nearest to title, tie-break by point_id
+                cursor.execute("""
+                    SELECT
+                        p.point_id,
+                        p.contribution_item_id,
+                        p.point_value
+                    FROM cluster_points cp
+                    JOIN point     p  ON cp.point_id   = p.point_id
+                    JOIN clusters  cl ON cp.cluster_id = cl.cluster_id
+                    WHERE cp.cluster_id = %s
+                    AND cl.title_embedding IS NOT NULL
+                    ORDER BY (p.point_embedding <=> cl.title_embedding) ASC, p.point_id ASC
+                    LIMIT %s
+                """, [cluster_id, page_size])
+                logger.info("stop")
+            else:
+                # Fallback: chronological
+                cursor.execute("""
+                    SELECT p.point_id, p.contribution_item_id, p.point_value
+                    FROM cluster_points cp
+                    JOIN point p ON cp.point_id = p.point_id
+                    WHERE cp.cluster_id = %s
+                    ORDER BY p.point_id ASC
+                    LIMIT %s
+                """, [cluster_id, page_size])
 
             points = []
             for point_row in cursor.fetchall():

@@ -14,8 +14,11 @@ def run(topic_id:str)-> SingleTopic:
     logger.info(f"Retrieving single topic with ID: {topic_id}")
     conn = get_db_connection()
     try:
+        logger.info("Database connection established")
         single_cluster = get_cluster_by_id(conn, topic_id, include_points=True, include_metadata=True)
+        logger.info("Single cluster retrieved:", single_cluster)
         single_topic = map_cluster_to_single_topic(single_cluster)
+        logger.info("mapping completed")
         return single_topic
     except Exception as e:
         logger.error(f"Error retrieving single topic with ID {topic_id}: {e}")

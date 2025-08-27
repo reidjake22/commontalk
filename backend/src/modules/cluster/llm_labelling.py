@@ -11,10 +11,13 @@ def summarise_cluster(cluster_points: List, title: str) -> str:
     # Extract point values (assuming point[1] is the text content)
     point_texts = [str(point["text"]) for point in cluster_points[:30]]  # Limit to 30 for API
 
-    model_input = f"""The following points are all part of the same category - {title}. 
-    Using the additional context of the points themselves, please provide a 200-word summary 
-    of the arguments, points and concerns revealed in these points:
-    
+    model_input = f"""Topic: {title}
+    We’ve collected a bunch of related points on this issue. Your job is to distill them into a clear summary (about 100-120 words):
+    - Highlight the main arguments and any contrasting positions.
+    - Note recurring concerns or themes.
+    - Keep it balanced and informative, as if summarizing a live debate for someone curious but short on time.
+    Tone: Accessible, thoughtful, not academic.
+    Here are the points:
     {' | '.join(point_texts)}"""
 
     try:
